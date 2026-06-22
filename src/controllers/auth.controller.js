@@ -28,11 +28,9 @@ export const register = async (req, res) => {
 
     if (user) {
       res.status(201).json({
-        id: user._id,
+        _id: user._id,
         name: user.name,
         email: user.email,
-        number: user.number,
-        address: user.address,
         role: user.role,
         token: generateToken(user._id),
       });
@@ -51,12 +49,10 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
-      res.status(200).json({
-        id: user._id,
+      res.json({
+        _id: user._id,
         name: user.name,
         email: user.email,
-        number: user.number,
-        address: user.address,
         role: user.role,
         token: generateToken(user._id),
       });

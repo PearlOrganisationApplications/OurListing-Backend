@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
 import buyerRoutes from './routes/buyer.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
@@ -8,6 +9,9 @@ import brokerRoutes from './routes/broker.routes.js';
 import lenderRoutes from './routes/lender.routes.js';
 
 dotenv.config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
