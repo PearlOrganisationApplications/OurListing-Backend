@@ -8,6 +8,8 @@ import buyerRoutes from './routes/buyer.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
 import brokerRoutes from './routes/broker.routes.js';
 import lenderRoutes from './routes/lender.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+
 
 import fs from 'fs';
 import path from 'path';
@@ -36,6 +38,8 @@ app.use('/api/user', buyerRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/broker', brokerRoutes);
 app.use('/api/lender', lenderRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
