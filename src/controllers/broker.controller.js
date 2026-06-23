@@ -338,3 +338,84 @@ export const updateLeadTag = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+export const deleteProperty = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ message: 'Property not found' });
+
+    console.log("DB Broker ID:", property.brokerId);
+    console.log("Token User ID:", req.user._id);
+
+    const isMatch = property.brokerId?.toString() === req.user._id.toString();
+
+    if (!isMatch) {
+      return res.status(403).json({ 
+        message: "Unauthorized!", 
+        dbId: property.brokerId, 
+        tokenId: req.user._id 
+      });
+    }
+
+    await Property.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProperty =  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const property = await Property.findById(id);
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+
+    const updateData = { ...req.body };
+
+    const bedroom = req.body['features[bedroom]'] || req.body.features?.bedroom;
+    const bathroom = req.body['features[bathroom]'] || req.body.features?.bathroom;
+    const balcony = req.body['features[balcony]'] || req.body.features?.balcony;
+
+    updateData.features = {
+      bedroom: bedroom !== undefined ? Number(bedroom) : property.features.bedroom,
+      bathroom: bathroom !== undefined ? Number(bathroom) : property.features.bathroom,
+      balcony: balcony !== undefined ? Number(balcony) : property.features.balcony,
+    };
+
+    if (req.files) {
+      const photos = req.files['photos[]'] || req.files['photos'] || [];
+      const docs = req.files['documents[]'] || req.files['documents'] || [];
+
+      if (photos.length > 0) {
+        const photoPaths = photos.map(f => f.path.replace(/\\/g, '/'));
+        updateData.photos = [...property.photos, ...photoPaths];
+      }
+
+      if (docs.length > 0) {
+        const docPaths = docs.map(f => f.path.replace(/\\/g, '/'));
+        updateData.documents = [...property.documents, ...docPaths];
+      }
+    }
+
+    if (updateData.price) updateData.price = Number(updateData.price);
+    if (updateData.latitude) updateData.latitude = Number(updateData.latitude);
+    if (updateData.longitude) updateData.longitude = Number(updateData.longitude);
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      message: 'Updated successfully',
+      property: updatedProperty,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
