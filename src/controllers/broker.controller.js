@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
@@ -230,7 +231,7 @@ export const addProperty = async (req, res) => {
 export const getLeads = async (req, res) => {
   try {
     const brokerId = req.user._id;
-    const { type, tag } = req.query;
+    const { type, tag, search, page = 1, limit = 10, sortBy = 'lastContactAt', order = 'desc' } = req.query;
 
     const query = { brokerId };
     if (type) {
@@ -240,7 +241,29 @@ export const getLeads = async (req, res) => {
       query.tag = tag.toLowerCase();
     }
 
-    const leads = await Lead.find(query).populate('interestedProperty', 'title');
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { name: searchRegex },
+        { phone: searchRegex }
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const sortField = sortBy || 'lastContactAt';
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOptions = { [sortField]: sortOrder };
+
+    const totalLeads = await Lead.countDocuments(query);
+
+    const leads = await Lead.find(query)
+      .populate('interestedProperty', 'title')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNum);
 
     const formattedLeads = leads.map((lead) => ({
       id: lead._id.toString(),
@@ -254,7 +277,15 @@ export const getLeads = async (req, res) => {
         : new Date().toISOString(),
     }));
 
-    res.status(200).json(formattedLeads);
+    res.status(200).json({
+      leads: formattedLeads,
+      pagination: {
+        total: totalLeads,
+        page: pageNum,
+        pages: Math.ceil(totalLeads / limitNum),
+        limit: limitNum,
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -267,13 +298,17 @@ export const updateLeadTag = async (req, res) => {
     const { leadId } = req.params;
     const { tag } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(leadId)) {
+      return res.status(400).json({ message: 'Invalid lead ID format.' });
+    }
+
     if (!tag || !['hot', 'warm', 'cold'].includes(tag.toLowerCase())) {
       return res.status(400).json({
         message: 'Invalid tag value. Allowed values: hot, warm, cold',
       });
     }
 
-    const lead = await Lead.findOne({ _id: leadId, brokerId });
+    const lead = await Lead.findOne({ _id: leadId, brokerId }).populate('interestedProperty', 'title');
 
     if (!lead) {
       return res.status(404).json({
@@ -285,7 +320,20 @@ export const updateLeadTag = async (req, res) => {
     lead.lastContactAt = new Date();
     await lead.save();
 
-    res.status(200).json({ message: 'Lead tag updated successfully' });
+    const formattedLead = {
+      id: lead._id.toString(),
+      name: lead.name,
+      phone: lead.phone,
+      type: lead.type,
+      tag: lead.tag,
+      interestedProperty: lead.interestedProperty ? lead.interestedProperty.title : '',
+      lastContactAt: lead.lastContactAt.toISOString(),
+    };
+
+    res.status(200).json({
+      message: 'Lead tag updated successfully',
+      lead: formattedLead
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
