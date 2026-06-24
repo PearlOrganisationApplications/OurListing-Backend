@@ -234,8 +234,8 @@ export const recordPropertyClick = async (req, res) => {
     lead = await Lead.create({
       name: buyerName,
       phone: buyerPhone,
-      type: 'buyer',
-      tag: 'warm',
+      type: 'BUYER',
+      tag: 'WARM',
       interestedProperty: propertyId,
       brokerId
     });
@@ -304,6 +304,32 @@ export const searchProperties = async (req, res) => {
       data: properties
     });
 
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+export const getSpecialUsers = async (req, res) => {
+  try {
+ 
+    
+    const targetRoles = ['OWNER', 'BROKER', 'LENDER'];
+
+    const users = await User.find({
+      role: { $in: targetRoles }
+    }).select('-password'); 
+
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
   } catch (error) {
     res.status(500).json({
       success: false,
