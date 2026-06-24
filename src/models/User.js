@@ -3,6 +3,16 @@ import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema(
   {
+    // Add these fields to your existing User schema
+
+    lastSeen: {
+      type: Date,
+      default: null,
+    },
+    fcmToken: {
+      type: String,
+      default: '',
+    },
     name: {
       type: String,
       required: true,
@@ -24,8 +34,13 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
+<<<<<<< HEAD
       enum: ['BUYER', 'OWNER', 'BROKER', 'LENDER'],
       default: 'BUYER',
+=======
+      enum: ['buyer', 'owner', 'broker', 'lender', 'admin'],
+      default: 'buyer',
+>>>>>>> d091185a41545c89c55507b9d1289bb3faa39fb9
     },
   },
   { timestamps: true }

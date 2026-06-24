@@ -4,6 +4,10 @@ node_modules/
 .env
 
 /src/generated/prisma
+<<<<<<< HEAD
 
 # Ignore uploads folder
 uploads/
+=======
+uploads/
+>>>>>>> d091185a41545c89c55507b9d1289bb3faa39fb9

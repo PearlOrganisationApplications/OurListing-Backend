@@ -1,0 +1,854 @@
+{
+  "info": {
+    "_postman_id": "d8a6b10e-8fb8-410a-8bfb-9c244c9bbfbe",
+    "name": "OurListing API Collection",
+    "description": "Postman collection for the OurListing Backend API, including Auth, Buyer, Owner, Broker, and Lender endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\",\n  \"number\": \"+1234567890\",\n  \"address\": \"123 Main St, New York\",\n  \"role\": \"broker\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            },
+            "description": "Register a new user (role: buyer, owner, broker, lender)."
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.environment.set(\"token\", jsonData.token);",
+                  "    pm.globals.set(\"token\", jsonData.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "Logs in a user and returns a token. This test script automatically stores the returned JWT token to a variable."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logout"
+              ]
+            },
+            "description": "Logs out the current session."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Buyer / User",
+      "item": [
+        {
+          "name": "Record Property Click",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/user/properties/{{property_id}}/click",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "properties",
+                "{{property_id}}",
+                "click"
+              ]
+            },
+            "description": "Records a user click on a property, creating or updating a lead for the broker handling that property."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "properties"
+              ]
+            },
+            "description": "Get all active properties registered in the system."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Nearby Properties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/properties/nearby?latitude=37.7749&longitude=-122.4194&radius=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "properties",
+                "nearby"
+              ],
+              "query": [
+                {
+                  "key": "latitude",
+                  "value": "37.7749",
+                  "description": "Latitude of coordinate"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-122.4194",
+                  "description": "Longitude of coordinate"
+                },
+                {
+                  "key": "radius",
+                  "value": "10",
+                  "description": "Search radius in miles/kilometers"
+                }
+              ]
+            },
+            "description": "Find properties near specified GPS coordinates."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Property Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/properties/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "properties",
+                "{{property_id}}"
+              ]
+            },
+            "description": "Get full details of a specific property by its MongoDB ObjectId."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Favorites List",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/favorites",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "favorites"
+              ]
+            },
+            "description": "Get list of user favorited properties."
+          },
+          "response": []
+        },
+        {
+          "name": "Toggle Favorite Property",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/user/favorites/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "user",
+                "favorites",
+                "{{property_id}}"
+              ]
+            },
+            "description": "Add or remove a property from the user's favorites list."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Owner",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/owner/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "owner",
+                "dashboard"
+              ]
+            },
+            "description": "Get aggregate listing, view and lead count stats for the authenticated owner."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Owner Listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/owner/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "owner",
+                "properties"
+              ]
+            },
+            "description": "Get all properties listed by the authenticated owner."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Property (Owner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Spacious Beachfront Mansion",
+                  "type": "text"
+                },
+                {
+                  "key": "info",
+                  "value": "A breathtaking mansion directly facing the ocean with a private beach access.",
+                  "type": "text"
+                },
+                {
+                  "key": "listingType",
+                  "value": "Sell",
+                  "type": "text"
+                },
+                {
+                  "key": "propertyType",
+                  "value": "Mansion",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "3200000",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Miami Beach, FL",
+                  "type": "text"
+                },
+                {
+                  "key": "latitude",
+                  "value": "25.7906",
+                  "type": "text"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-80.1300",
+                  "type": "text"
+                },
+                {
+                  "key": "landArea",
+                  "value": "4500 sqft",
+                  "type": "text"
+                },
+                {
+                  "key": "features[bedroom]",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "features[bathroom]",
+                  "value": "4.5",
+                  "type": "text"
+                },
+                {
+                  "key": "features[balcony]",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "photos[]",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select file for property photo"
+                },
+                {
+                  "key": "documents[]",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select file for property documentation"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/owner/properties/add",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "owner",
+                "properties",
+                "add"
+              ]
+            },
+            "description": "Allows owner to add a property listing with support for multipart uploads of photos and documents."
+          },
+          "response": []
+        },
+        {
+          "name": "Initiate Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/owner/properties/pay?plan=Premium",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "owner",
+                "properties",
+                "pay"
+              ],
+              "query": [
+                {
+                  "key": "plan",
+                  "value": "Premium",
+                  "description": "Subscription or Listing plan"
+                }
+              ]
+            },
+            "description": "Initiate a mock payment flow for a premium tier plan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Broker",
+      "item": [
+        {
+          "name": "Get Broker Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/broker/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "broker",
+                "stats"
+              ]
+            },
+            "description": "Get detailed stats for the authenticated broker, including active listings, leads count by tags, and pending/earned commissions."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Broker Listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/broker/listings?status=active",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "broker",
+                "listings"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": "Filter by status: active, draft, sold, inactive"
+                }
+              ]
+            },
+            "description": "Get list of properties assigned to or managed by the authenticated broker."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Property (Broker)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Luxury Penthouse Suite",
+                  "type": "text"
+                },
+                {
+                  "key": "info",
+                  "value": "High-end luxury penthouse with modern amenities, automated appliances and a beautiful view of Manhattan.",
+                  "type": "text"
+                },
+                {
+                  "key": "listingType",
+                  "value": "Sell",
+                  "type": "text"
+                },
+                {
+                  "key": "propertyType",
+                  "value": "Penthouse",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "1500000",
+                  "type": "text"
+                },
+                {
+                  "key": "location",
+                  "value": "Manhattan, NY",
+                  "type": "text"
+                },
+                {
+                  "key": "latitude",
+                  "value": "40.7831",
+                  "type": "text"
+                },
+                {
+                  "key": "longitude",
+                  "value": "-73.9712",
+                  "type": "text"
+                },
+                {
+                  "key": "landArea",
+                  "value": "2200 sqft",
+                  "type": "text"
+                },
+                {
+                  "key": "features[bedroom]",
+                  "value": "3",
+                  "type": "text"
+                },
+                {
+                  "key": "features[bathroom]",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "features[balcony]",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "ownerName",
+                  "value": "Alice Smith",
+                  "type": "text"
+                },
+                {
+                  "key": "ownerEmail",
+                  "value": "alice.smith@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "ownerPhone",
+                  "value": "+1987654321",
+                  "type": "text"
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "type": "text"
+                },
+                {
+                  "key": "photos[]",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select file for property photo"
+                },
+                {
+                  "key": "documents[]",
+                  "type": "file",
+                  "src": [],
+                  "description": "Select file for property documentation"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/broker/properties/add",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "broker",
+                "properties",
+                "add"
+              ]
+            },
+            "description": "Add a property listing as a broker, with automatic owner user generation/lookup from name, email, and phone."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Leads List",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/broker/leads?type=buyer&tag=hot&search=&page=1&limit=10&sortBy=lastContactAt&order=desc",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "broker",
+                "leads"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "buyer",
+                  "description": "Filter by lead type (buyer, owner)"
+                },
+                {
+                  "key": "tag",
+                  "value": "hot",
+                  "description": "Filter by tag (hot, warm, cold)"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by name or phone (case-insensitive substring search)"
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (defaults to 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Results per page (defaults to 10)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "lastContactAt",
+                  "description": "Field to sort by (defaults to lastContactAt)"
+                },
+                {
+                  "key": "order",
+                  "value": "desc",
+                  "description": "Sorting direction: asc or desc"
+                }
+              ]
+            },
+            "description": "Get leads registered under the authenticated broker with advanced filtering, searching, sorting and pagination."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lead Tag",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tag\": \"hot\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/broker/leads/{{lead_id}}/tag",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "broker",
+                "leads",
+                "{{lead_id}}",
+                "tag"
+              ]
+            },
+            "description": "Update the tag classification (hot, warm, cold) for a specific lead."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lender",
+      "item": [
+        {
+          "name": "Get Lender Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/lender/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "lender",
+                "dashboard"
+              ]
+            },
+            "description": "Placeholder endpoint to get dashboard stats for lender."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Lender Mortgages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/lender/mortgages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "lender",
+                "mortgages"
+              ]
+            },
+            "description": "Placeholder endpoint to get listed mortgages."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "API Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            },
+            "description": "Retrieve status of the backend server."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "property_id",
+      "value": "64e3c1b1f1a2b3c4d5e6f7a9",
+      "type": "string"
+    },
+    {
+      "key": "lead_id",
+      "value": "64e3c1b1f1a2b3c4d5e6f7b0",
+      "type": "string"
+    }
+  ]
+}

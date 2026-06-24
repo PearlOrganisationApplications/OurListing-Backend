@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
@@ -230,7 +231,7 @@ export const addProperty = async (req, res) => {
 export const getLeads = async (req, res) => {
   try {
     const brokerId = req.user._id;
-    const { type, tag } = req.query;
+    const { type, tag, search, page = 1, limit = 10, sortBy = 'lastContactAt', order = 'desc' } = req.query;
 
     const query = { brokerId };
     if (type) {
@@ -240,7 +241,29 @@ export const getLeads = async (req, res) => {
       query.tag = tag.toUpperCase();
     }
 
-    const leads = await Lead.find(query).populate('interestedProperty', 'title');
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { name: searchRegex },
+        { phone: searchRegex }
+      ];
+    }
+
+    const pageNum = Math.max(1, parseInt(page) || 1);
+    const limitNum = Math.max(1, parseInt(limit) || 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    const sortField = sortBy || 'lastContactAt';
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const sortOptions = { [sortField]: sortOrder };
+
+    const totalLeads = await Lead.countDocuments(query);
+
+    const leads = await Lead.find(query)
+      .populate('interestedProperty', 'title')
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNum);
 
     const formattedLeads = leads.map((lead) => ({
       id: lead._id.toString(),
@@ -254,7 +277,15 @@ export const getLeads = async (req, res) => {
         : new Date().toISOString(),
     }));
 
-    res.status(200).json(formattedLeads);
+    res.status(200).json({
+      leads: formattedLeads,
+      pagination: {
+        total: totalLeads,
+        page: pageNum,
+        pages: Math.ceil(totalLeads / limitNum),
+        limit: limitNum,
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -267,13 +298,17 @@ export const updateLeadTag = async (req, res) => {
     const { leadId } = req.params;
     const { tag } = req.body;
 
+    if (!mongoose.Types.ObjectId.isValid(leadId)) {
+      return res.status(400).json({ message: 'Invalid lead ID format.' });
+    }
+
     if (!tag || !['hot', 'warm', 'cold'].includes(tag.toLowerCase())) {
       return res.status(400).json({
         message: 'Invalid tag value. Allowed values: hot, warm, cold',
       });
     }
 
-    const lead = await Lead.findOne({ _id: leadId, brokerId });
+    const lead = await Lead.findOne({ _id: leadId, brokerId }).populate('interestedProperty', 'title');
 
     if (!lead) {
       return res.status(404).json({
@@ -285,7 +320,101 @@ export const updateLeadTag = async (req, res) => {
     lead.lastContactAt = new Date();
     await lead.save();
 
-    res.status(200).json({ message: 'Lead tag updated successfully' });
+    const formattedLead = {
+      id: lead._id.toString(),
+      name: lead.name,
+      phone: lead.phone,
+      type: lead.type,
+      tag: lead.tag,
+      interestedProperty: lead.interestedProperty ? lead.interestedProperty.title : '',
+      lastContactAt: lead.lastContactAt.toISOString(),
+    };
+
+    res.status(200).json({
+      message: 'Lead tag updated successfully',
+      lead: formattedLead
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const deleteProperty = async (req, res) => {
+  try {
+    const property = await Property.findById(req.params.id);
+    if (!property) return res.status(404).json({ message: 'Property not found' });
+
+    console.log("DB Broker ID:", property.brokerId);
+    console.log("Token User ID:", req.user._id);
+
+    const isMatch = property.brokerId?.toString() === req.user._id.toString();
+
+    if (!isMatch) {
+      return res.status(403).json({ 
+        message: "Unauthorized!", 
+        dbId: property.brokerId, 
+        tokenId: req.user._id 
+      });
+    }
+
+    await Property.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Deleted' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateProperty =  async (req, res) => {
+  try {
+    const { id } = req.params;
+    const property = await Property.findById(id);
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+
+    const updateData = { ...req.body };
+
+    const bedroom = req.body['features[bedroom]'] || req.body.features?.bedroom;
+    const bathroom = req.body['features[bathroom]'] || req.body.features?.bathroom;
+    const balcony = req.body['features[balcony]'] || req.body.features?.balcony;
+
+    updateData.features = {
+      bedroom: bedroom !== undefined ? Number(bedroom) : property.features.bedroom,
+      bathroom: bathroom !== undefined ? Number(bathroom) : property.features.bathroom,
+      balcony: balcony !== undefined ? Number(balcony) : property.features.balcony,
+    };
+
+    if (req.files) {
+      const photos = req.files['photos[]'] || req.files['photos'] || [];
+      const docs = req.files['documents[]'] || req.files['documents'] || [];
+
+      if (photos.length > 0) {
+        const photoPaths = photos.map(f => f.path.replace(/\\/g, '/'));
+        updateData.photos = [...property.photos, ...photoPaths];
+      }
+
+      if (docs.length > 0) {
+        const docPaths = docs.map(f => f.path.replace(/\\/g, '/'));
+        updateData.documents = [...property.documents, ...docPaths];
+      }
+    }
+
+    if (updateData.price) updateData.price = Number(updateData.price);
+    if (updateData.latitude) updateData.latitude = Number(updateData.latitude);
+    if (updateData.longitude) updateData.longitude = Number(updateData.longitude);
+
+    const updatedProperty = await Property.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      message: 'Updated successfully',
+      property: updatedProperty,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
