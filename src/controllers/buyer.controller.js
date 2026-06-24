@@ -1,3 +1,6 @@
+import Property from '../models/Property.js';
+import Favorite from '../models/Favorite.js';
+
 export const getProperties = async (req, res) => {
   try {
     // Populate user to match the "user" object in the JSON spec

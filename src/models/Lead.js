@@ -4,8 +4,8 @@ const leadSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
     phone: { type: String, required: true },
-    type: { type: String, enum: ['buyer', 'owner'], required: true },
-    tag: { type: String, enum: ['hot', 'warm', 'cold'], default: 'warm' },
+    type: { type: String, enum: ['BUYER', 'OWNER'], required: true },
+    tag: { type: String, enum: ['HOT', 'WARM', 'COLD'], default: 'WARM' },
     interestedProperty: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Property',

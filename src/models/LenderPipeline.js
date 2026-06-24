@@ -11,13 +11,13 @@ const lenderPipelineSchema = new mongoose.Schema(
     propertyAddress: { type: String, required: true },
     loanType: {
       type: String,
-      enum: ['Conventional', 'FHA', 'VA', 'USDA', 'Jumbo'],
+      enum: ['CONVENTIONAL', 'FHA', 'VA', 'USDA', 'JUMBO'],
       required: true,
     },
     stage: {
       type: String,
-      enum: ['Pre-Approval', 'Processing', 'Appraisal', 'Underwriting', 'Clear-to-Close', 'Funded'],
-      default: 'Pre-Approval',
+      enum: ['PRE-APPROVAL', 'PROCESSING', 'APPRAISAL', 'UNDERWRITING', 'CLEAR-TO-CLOSE', 'FUNDED'],
+      default: 'PRE-APPROVAL',
     },
     closingDate: { type: String },   // stored as display string e.g. "Oct 15"
     loanAmount: { type: Number, default: 0 }, // numeric value for YTD funded aggregation

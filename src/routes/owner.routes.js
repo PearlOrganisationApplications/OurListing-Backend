@@ -1,18 +1,19 @@
 import express from 'express';
-import { getDashboard, getListings, addProperty, initiatePayment } from '../controllers/owner.controller.js';
+import { getDashboard, getListings, addProperty, initiatePayment, capturePayment } from '../controllers/owner.controller.js';
 import { upload } from '../middlewares/upload.middleware.js';
-// import { protect } from '../middlewares/auth.middleware.js'; // Uncomment to enforce auth
+import { protect } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-router.get('/dashboard', getDashboard);
-router.get('/properties', getListings);
+router.get('/dashboard', protect, getDashboard);
+router.get('/properties', protect, getListings);
 
-router.post('/properties/add', upload.fields([
+router.post('/properties/add', protect, upload.fields([
   { name: 'photos[]', maxCount: 10 },
   { name: 'documents[]', maxCount: 5 }
 ]), addProperty);
 
-router.post('/properties/pay', initiatePayment);
+router.post('/properties/pay', protect, initiatePayment);
+router.post('/properties/pay/capture', protect, capturePayment);
 
 export default router;

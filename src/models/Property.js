@@ -4,7 +4,7 @@ const propertySchema = new mongoose.Schema(
   {
     title: { type: String, required: true },
     info: { type: String },
-    listingType: { type: String, enum: ['Sell', 'Rent'], required: true },
+    listingType: { type: String, enum: ['SELL', 'RENT'], required: true },
     propertyType: { type: String },
     price: { type: Number, required: true },
     location: { type: String, required: true },
@@ -18,7 +18,8 @@ const propertySchema = new mongoose.Schema(
     },
     photos: [{ type: String }],
     documents: [{ type: String }],
-    status: { type: String, enum: ['Active', 'Sold', 'Inactive', 'Draft'], default: 'Active' },
+    views: { type: Number, default: 0 },
+    status: { type: String, enum: ['ACTIVE', 'SOLD', 'INACTIVE', 'DRAFT'], default: 'ACTIVE' },
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

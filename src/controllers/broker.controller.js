@@ -10,16 +10,16 @@ export const getStats = async (req, res) => {
     // Count active listings for this broker
     const activeListingsCount = await Property.countDocuments({
       brokerId,
-      status: 'Active',
+      status: 'ACTIVE',
     });
 
     // Count leads for this broker
     const totalLeads = await Lead.countDocuments({ brokerId });
 
     // Group leads by tag
-    const hotLeads = await Lead.countDocuments({ brokerId, tag: 'hot' });
-    const warmLeads = await Lead.countDocuments({ brokerId, tag: 'warm' });
-    const coldLeads = await Lead.countDocuments({ brokerId, tag: 'cold' });
+    const hotLeads = await Lead.countDocuments({ brokerId, tag: 'HOT' });
+    const warmLeads = await Lead.countDocuments({ brokerId, tag: 'WARM' });
+    const coldLeads = await Lead.countDocuments({ brokerId, tag: 'COLD' });
 
     // Calculate commissions (2.5% of price)
     const properties = await Property.find({ brokerId });
@@ -28,9 +28,9 @@ export const getStats = async (req, res) => {
 
     properties.forEach((prop) => {
       const commission = (prop.price || 0) * 0.025;
-      if (prop.status === 'Active') {
+      if (prop.status === 'ACTIVE') {
         pendingCommission += commission;
-      } else if (prop.status === 'Sold') {
+      } else if (prop.status === 'SOLD') {
         earnedCommission += commission;
       }
     });
@@ -58,12 +58,12 @@ export const getListings = async (req, res) => {
     const query = { brokerId };
     if (status) {
       const statusMap = {
-        active: 'Active',
-        draft: 'Draft',
-        sold: 'Sold',
-        inactive: 'Inactive',
+        active: 'ACTIVE',
+        draft: 'DRAFT',
+        sold: 'SOLD',
+        inactive: 'INACTIVE',
       };
-      query.status = statusMap[status.toLowerCase()] || status;
+      query.status = statusMap[status.toLowerCase()] || status.toUpperCase();
     }
 
     const properties = await Property.find(query).populate('ownerId', 'name');
@@ -74,7 +74,7 @@ export const getListings = async (req, res) => {
       location: prop.location,
       price: prop.price,
       ownerName: prop.ownerId ? prop.ownerId.name : '',
-      status: prop.status ? prop.status.toLowerCase() : 'active',
+      status: prop.status ? prop.status.toUpperCase() : 'ACTIVE',
       photoUrl: prop.photos && prop.photos.length > 0 ? prop.photos[0] : '',
     }));
 
@@ -176,7 +176,7 @@ export const addProperty = async (req, res) => {
           name: ownerName,
           email: ownerEmail,
           number: ownerPhone || '',
-          role: 'owner',
+          role: 'OWNER',
           password: 'password123', // auto-hashed
         });
         resolvedOwnerId = newOwner._id;
@@ -184,21 +184,21 @@ export const addProperty = async (req, res) => {
     }
 
     // Map status enum
-    let dbStatus = 'Active';
+    let dbStatus = 'ACTIVE';
     if (status) {
       const statusMap = {
-        active: 'Active',
-        draft: 'Draft',
-        sold: 'Sold',
-        inactive: 'Inactive',
+        active: 'ACTIVE',
+        draft: 'DRAFT',
+        sold: 'SOLD',
+        inactive: 'INACTIVE',
       };
-      dbStatus = statusMap[status.toLowerCase()] || status;
+      dbStatus = statusMap[status.toLowerCase()] || status.toUpperCase();
     }
 
     const newProperty = await Property.create({
       title,
       info: info || '',
-      listingType: listingType || 'Sell',
+      listingType: listingType ? listingType.toUpperCase() : 'SELL',
       propertyType: propertyType || '',
       price: Number(price || 0),
       location,
@@ -234,10 +234,10 @@ export const getLeads = async (req, res) => {
 
     const query = { brokerId };
     if (type) {
-      query.type = type.toLowerCase();
+      query.type = type.toUpperCase();
     }
     if (tag) {
-      query.tag = tag.toLowerCase();
+      query.tag = tag.toUpperCase();
     }
 
     const leads = await Lead.find(query).populate('interestedProperty', 'title');
@@ -281,7 +281,7 @@ export const updateLeadTag = async (req, res) => {
       });
     }
 
-    lead.tag = tag.toLowerCase();
+    lead.tag = tag.toUpperCase();
     lead.lastContactAt = new Date();
     await lead.save();
 

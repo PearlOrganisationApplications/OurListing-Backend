@@ -13,8 +13,8 @@ const lenderApplicationSchema = new mongoose.Schema(
     creditBand: { type: String, required: true },   // e.g. "720+"
     status: {
       type: String,
-      enum: ['Review', 'Pre-Approved', 'Rejected', 'Funded'],
-      default: 'Review',
+      enum: ['REVIEW', 'PRE-APPROVED', 'REJECTED', 'FUNDED'],
+      default: 'REVIEW',
     },
     // The lender this application is assigned/visible to (optional – can be null for marketplace)
     lenderId: {
