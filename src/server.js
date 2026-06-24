@@ -1,13 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import dns from "node:dns";
-
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+import dns from 'node:dns';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
@@ -15,21 +14,13 @@ import buyerRoutes from './routes/buyer.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
 import brokerRoutes from './routes/broker.routes.js';
 import lenderRoutes from './routes/lender.routes.js';
-<<<<<<< HEAD
 import planRoutes from './routes/plan.routes.js';
-=======
 import chatRoutes from './routes/chat.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import initializeChatSocket from './socket/chat.socket.js';
 
-
-import adminRoutes from './routes/admin.routes.js';
-
->>>>>>> 97e0578f7fb3691377732259bb7aedd288649f68
-
-import fs from 'fs';
-import path from 'path';
-
 dotenv.config();
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 // ─── Path setup ───────────────────────────────────────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
@@ -76,25 +67,18 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
-
 // ─── Static files — serve uploads folder ─────────────────────────────────────
-// MIGRATION NOTE: When switching to S3/Cloudinary,
-// remove this line — files won't be served locally anymore
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
-console.log('Static path:', path.join(__dirname, '../uploads'));
+
 // ─── REST Routes ──────────────────────────────────────────────────────────────
 app.use('/api', authRoutes);
 app.use('/api/user', buyerRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/broker', brokerRoutes);
 app.use('/api/lender', lenderRoutes);
-<<<<<<< HEAD
 app.use('/api/plans', planRoutes);
-=======
 app.use('/api/chats', chatRoutes);
 app.use('/api/admin', adminRoutes);
->>>>>>> 97e0578f7fb3691377732259bb7aedd288649f68
 
 
 
