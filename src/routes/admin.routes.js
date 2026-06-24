@@ -33,7 +33,19 @@ import {
   getMortgageById,
   createMortgage,
   updateMortgage,
-  deleteMortgage
+  deleteMortgage,
+  getAllBuyers,
+  getAllOwners,
+  getAllBrokers,
+  getAllLenders,
+  updateBuyer,
+  deleteBuyer,
+  updateOwner,
+  deleteOwner,
+  updateBroker,
+  deleteBroker,
+  updateLender,
+  deleteLender
 } from '../controllers/admin.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -119,5 +131,25 @@ router.get('/mortgages/:id', protect, adminProtect, getMortgageById);
 router.post('/mortgages', protect, adminProtect, createMortgage);
 router.put('/mortgages/:id', protect, adminProtect, updateMortgage);
 router.delete('/mortgages/:id', protect, adminProtect, deleteMortgage);
+
+
+router.get("/all/buyers", protect, adminProtect, getAllBuyers);
+
+router.get("/all/owners", protect, adminProtect, getAllOwners);
+
+router.get("/all/brokers", protect, adminProtect, getAllBrokers);
+
+router.get("/all/lenders", protect, adminProtect, getAllLenders);
+router.put("/buyers/:id", protect, adminProtect, updateBuyer);
+router.delete("/buyers/:id", protect, adminProtect, deleteBuyer);
+
+router.put("/owners/:id", protect, adminProtect, updateOwner);
+router.delete("/owners/:id", protect, adminProtect, deleteOwner);
+
+router.put("/brokers/:id", protect, adminProtect, updateBroker);
+router.delete("/brokers/:id", protect, adminProtect, deleteBroker);
+
+router.put("/lenders/:id", protect, adminProtect, updateLender);
+router.delete("/lenders/:id", protect, adminProtect, deleteLender);
 
 export default router;

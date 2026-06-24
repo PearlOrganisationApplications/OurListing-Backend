@@ -814,3 +814,352 @@ export const deleteMortgage = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+
+// GET /api/admin/buyers
+export const getAllBuyers = async (req, res) => {
+  try {
+    const buyers = await User.find({ role: "buyer" || "BUYER" })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: buyers.length,
+      buyers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// GET /api/admin/owners
+export const getAllOwners = async (req, res) => {
+  try {
+    const owners = await User.find({ role: "owner" || "OWNER" })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: owners.length,
+      owners,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+// GET /api/admin/brokers
+export const getAllBrokers = async (req, res) => {
+  try {
+    const brokers = await User.find({ role: "broker" || "BROKER" })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: brokers.length,
+      brokers,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// GET /api/admin/lenders
+export const getAllLenders = async (req, res) => {
+  try {
+    const lenders = await User.find({ role: "lender" || "LENDER" })
+      .select("-password")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: lenders.length,
+      lenders,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+
+// PUT /api/admin/buyers/:id
+export const updateBuyer = async (req, res) => {
+  try {
+    const buyer = await User.findOne({
+      _id: req.params.id,
+      role: "buyer",
+    });
+
+    if (!buyer) {
+      return res.status(404).json({
+        success: false,
+        message: "Buyer not found",
+      });
+    }
+
+    const { name, email, number, address, password } = req.body;
+
+    if (name) buyer.name = name;
+    if (email) buyer.email = email;
+    if (number) buyer.number = number;
+    if (address) buyer.address = address;
+    if (password) buyer.password = password;
+
+    await buyer.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Buyer updated successfully",
+      buyer,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+// DELETE /api/admin/buyers/:id
+export const deleteBuyer = async (req, res) => {
+  try {
+    const buyer = await User.findOne({
+      _id: req.params.id,
+      role: "buyer",
+    });
+
+    if (!buyer) {
+      return res.status(404).json({
+        success: false,
+        message: "Buyer not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Buyer deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// PUT /api/admin/owners/:id
+export const updateOwner = async (req, res) => {
+  try {
+    const owner = await User.findOne({
+      _id: req.params.id,
+      role: "owner",
+    });
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: "Owner not found",
+      });
+    }
+
+    Object.assign(owner, req.body);
+
+    await owner.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Owner updated successfully",
+      owner,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// DELETE /api/admin/owners/:id
+export const deleteOwner = async (req, res) => {
+  try {
+    const owner = await User.findOne({
+      _id: req.params.id,
+      role: "owner",
+    });
+
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: "Owner not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Owner deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+// PUT /api/admin/brokers/:id
+export const updateBroker = async (req, res) => {
+  try {
+    const broker = await User.findOne({
+      _id: req.params.id,
+      role: "broker",
+    });
+
+    if (!broker) {
+      return res.status(404).json({
+        success: false,
+        message: "Broker not found",
+      });
+    }
+
+    Object.assign(broker, req.body);
+
+    await broker.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Broker updated successfully",
+      broker,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+// DELETE /api/admin/brokers/:id
+export const deleteBroker = async (req, res) => {
+  try {
+    const broker = await User.findOne({
+      _id: req.params.id,
+      role: "broker",
+    });
+
+    if (!broker) {
+      return res.status(404).json({
+        success: false,
+        message: "Broker not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Broker deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// PUT /api/admin/lenders/:id
+export const updateLender = async (req, res) => {
+  try {
+    const lender = await User.findOne({
+      _id: req.params.id,
+      role: "lender",
+    });
+
+    if (!lender) {
+      return res.status(404).json({
+        success: false,
+        message: "Lender not found",
+      });
+    }
+
+    Object.assign(lender, req.body);
+
+    await lender.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Lender updated successfully",
+      lender,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+// DELETE /api/admin/lenders/:id
+export const deleteLender = async (req, res) => {
+  try {
+    const lender = await User.findOne({
+      _id: req.params.id,
+      role: "lender",
+    });
+
+    if (!lender) {
+      return res.status(404).json({
+        success: false,
+        message: "Lender not found",
+      });
+    }
+
+    await User.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Lender deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
