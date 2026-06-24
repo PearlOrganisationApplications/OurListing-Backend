@@ -121,11 +121,33 @@ export const getNearbyProperties = async (req, res) => {
 };
 
 export const getFavorites = async (req, res) => {
-  res.status(200).json({ message: "Get Favorites placeholder" });
+  try {
+    // Find all favorite entries for the authenticated user and populate property details
+    const favorites = await Favorite.find({ user: req.user._id }).populate('property');
+    const properties = favorites.map((fav) => fav.property);
+    return res.status(200).json({ status: 'success', data: properties });
+  } catch (error) {
+    console.error('getFavorites error:', error);
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
 };
 
 export const toggleFavorite = async (req, res) => {
-  res.status(200).json({ message: "Toggle Favorite placeholder" });
+  try {
+    const userId = req.user._id;
+    const propertyId = req.params.propertyId;
+    // Check if the favorite already exists
+    const existing = await Favorite.findOne({ user: userId, property: propertyId });
+    if (existing) {
+      await existing.deleteOne();
+    } else {
+      await Favorite.create({ user: userId, property: propertyId });
+    }
+    return res.status(200).json({ status: 'success', message: 'Favorite status updated' });
+  } catch (error) {
+    console.error('toggleFavorite error:', error);
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
 };
 
 export const recordPropertyClick = async (req, res) => {
