@@ -34,13 +34,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-<<<<<<< HEAD
-      enum: ['BUYER', 'OWNER', 'BROKER', 'LENDER'],
-      default: 'BUYER',
-=======
       enum: ['buyer', 'owner', 'broker', 'lender', 'admin'],
       default: 'buyer',
->>>>>>> d091185a41545c89c55507b9d1289bb3faa39fb9
     },
   },
   { timestamps: true }

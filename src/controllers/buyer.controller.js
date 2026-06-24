@@ -1,14 +1,8 @@
-<<<<<<< HEAD
+import mongoose from 'mongoose';
 import Property from '../models/Property.js';
 import Favorite from '../models/Favorite.js';
-
-=======
-<<<<<<< HEAD
-import Property from '../models/Property.js';
-import Favorite from '../models/Favorite.js';
-import mongoose from 'mongoose';  
-
-
+import Lead from '../models/Lead.js';
+import User from '../models/User.js';
 
 // Returns a Set of property IDs (as strings) the current user has favorited.
 // Returns an empty Set if there is no logged-in user (guest browsing).
@@ -18,20 +12,7 @@ const getUserFavoriteIdSet = async (userId) => {
   return new Set(favorites.map((fav) => fav.property.toString()));
 };
 
-// export const getProperties = async (req, res) => {
-//   try {
-//     console.log(req.user)
-//     // Populate user to match the "user" object in the JSON spec
-//   const properties = await Property.find({}).populate('ownerId', 'name email number address role');
-//     const favoriteIds = await getUserFavoriteIdSet(req.user?._id);
-=======
-import mongoose from 'mongoose';
-import Property from '../models/Property.js';
-import Lead from '../models/Lead.js';
-import User from '../models/User.js';
 
->>>>>>> 97e0578f7fb3691377732259bb7aedd288649f68
->>>>>>> d091185a41545c89c55507b9d1289bb3faa39fb9
 export const getProperties = async (req, res) => {
   try {
     // Populate owner to match the "user" object in the JSON spec
