@@ -234,8 +234,8 @@ export const recordPropertyClick = async (req, res) => {
     lead = await Lead.create({
       name: buyerName,
       phone: buyerPhone,
-      type: 'buyer',
-      tag: 'warm',
+      type: 'BUYER',
+      tag: 'WARM',
       interestedProperty: propertyId,
       brokerId
     });
@@ -246,5 +246,95 @@ export const recordPropertyClick = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const searchProperties = async (req, res) => {
+  try {
+    const { 
+      location, 
+      lat, 
+      lng, 
+      radius = 10, 
+      listingType, 
+      minPrice, 
+      maxPrice,
+      propertyType 
+    } = req.query;
+
+    let query = {};
+
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+
+    
+    if (lat && lng) {
+      const distanceInDegrees = radius / 111.32; 
+      
+      query.latitude = {
+        $gte: parseFloat(lat) - distanceInDegrees,
+        $lte: parseFloat(lat) + distanceInDegrees
+      };
+      query.longitude = {
+        $gte: parseFloat(lng) - distanceInDegrees,
+        $lte: parseFloat(lng) + distanceInDegrees
+      };
+    }
+
+    if (listingType) query.listingType = listingType;
+    if (propertyType) query.propertyType = propertyType;
+    
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    query.status = 'Active';
+
+    const properties = await Property.find(query)
+      .populate('ownerId', 'name email') 
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: properties.length,
+      data: properties
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+export const getSpecialUsers = async (req, res) => {
+  try {
+ 
+    
+    const targetRoles = ['OWNER', 'BROKER', 'LENDER'];
+
+    const users = await User.find({
+      role: { $in: targetRoles }
+    }).select('-password'); 
+
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
   }
 };
