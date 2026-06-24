@@ -31,19 +31,19 @@ export const getDashboard = async (req, res) => {
     // ── KPI 1: New leads = applications with status "Review" ────────────────
     const newLeadsCount = await LenderApplication.countDocuments({
       $or: [{ lenderId }, { lenderId: null }],
-      status: 'Review',
+      status: 'REVIEW',
     });
 
     // ── KPI 2: Pre-approved = pipeline entries at "Pre-Approval" stage ───────
     const preApprovedCount = await LenderPipeline.countDocuments({
       lenderId,
-      stage: 'Pre-Approval',
+      stage: 'PRE-APPROVAL',
     });
 
     // ── KPI 3: In underwriting = pipeline entries at "Underwriting" stage ────
     const inUnderwritingCount = await LenderPipeline.countDocuments({
       lenderId,
-      stage: 'Underwriting',
+      stage: 'UNDERWRITING',
     });
 
     // ── KPI 4: Total funded YTD = sum of loanAmount for "Funded" entries ─────
@@ -51,7 +51,7 @@ export const getDashboard = async (req, res) => {
       {
         $match: {
           lenderId,
-          stage: 'Funded',
+          stage: 'FUNDED',
           fundedYear: currentYear,
         },
       },
@@ -68,7 +68,7 @@ export const getDashboard = async (req, res) => {
     // ── New Applications (status = "Review") ─────────────────────────────────
     const newApplicationsDocs = await LenderApplication.find({
       $or: [{ lenderId }, { lenderId: null }],
-      status: 'Review',
+      status: 'REVIEW',
     }).sort({ createdAt: -1 });
 
     const newApplications = newApplicationsDocs.map((app) => ({
@@ -84,7 +84,7 @@ export const getDashboard = async (req, res) => {
     // ── Active Pipeline (all non-Funded, non-Rejected stages) ────────────────
     const activePipelineDocs = await LenderPipeline.find({
       lenderId,
-      stage: { $nin: ['Funded'] },
+      stage: { $nin: ['FUNDED'] },
     }).sort({ createdAt: -1 });
 
     const activePipeline = activePipelineDocs.map((pipe) => ({
@@ -146,6 +146,44 @@ export const getMortgages = async (req, res) => {
     });
   } catch (error) {
     console.error('getMortgages error:', error);
+    return res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/lender/mortgages/:id
+// Retrieves a single mortgage listing by its ID.
+// ─────────────────────────────────────────────────────────────────────────────
+export const getMortgageById = async (req, res) => {
+  try {
+    const listing = await MortgageListing.findById(req.params.id);
+
+    if (!listing) {
+      return res.status(404).json({ status: 'error', message: 'Mortgage listing not found' });
+    }
+
+    const formattedListing = {
+      id: listing._id.toString(),
+      property_type: listing.propertyType,
+      property_address: listing.propertyAddress,
+      purchase_price: listing.purchasePrice,
+      requested_loan: listing.requestedLoan,
+      ltv_ratio: listing.ltvRatio,
+      fico_score: listing.ficoScore,
+      buyer_intent: listing.buyerIntent,
+      posted_date: listing.postedDate
+        ? listing.postedDate.toISOString().split('T')[0]
+        : null,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        listing: formattedListing,
+      },
+    });
+  } catch (error) {
+    console.error('getMortgageById error:', error);
     return res.status(500).json({ status: 'error', message: error.message });
   }
 };
