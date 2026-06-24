@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
 import MortgageListing from '../models/MortgageListing.js';
+import Loan from "../models/Loan.js";
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id) => {
@@ -1159,6 +1160,239 @@ export const deleteLender = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
+      message: error.message,
+    });
+  }
+};
+
+
+
+
+
+// lend properties apis
+export const createLoan = async (req, res) => {
+  try {
+    const {
+      propertyId,
+      borrowerId,
+      loanAmount,
+      tenure,
+      interestRate,
+    } = req.body;
+
+    const property = await Property.findById(propertyId);
+
+    if (!property) {
+      return res.status(404).json({
+        message: "Property not found",
+      });
+    }
+
+    const borrower = await User.findById(borrowerId);
+
+    if (!borrower) {
+      return res.status(404).json({
+        message: "Borrower not found",
+      });
+    }
+
+    const loan = await Loan.create({
+      propertyId,
+      borrowerId,
+      ownerId: property.ownerId,
+      loanAmount,
+      tenure,
+      interestRate,
+      assignedBy: req.user._id,
+    });
+
+    res.status(201).json({
+      success: true,
+      loan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+
+export const getAllLoans = async (req, res) => {
+  try {
+    const loans = await Loan.find()
+      .populate("propertyId")
+      .populate("borrowerId", "name email")
+      .populate("ownerId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(loans);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+
+export const approveLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found",
+      });
+    }
+
+    loan.status = "Approved";
+
+    await loan.save();
+
+    res.status(200).json({
+      success: true,
+      loan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+
+export const rejectLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found",
+      });
+    }
+
+    loan.status = "Rejected";
+
+    await loan.save();
+
+    res.status(200).json({
+      success: true,
+      loan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+
+
+
+
+export const getMyLoans = async (req, res) => {
+  try {
+    const loans = await Loan.find({
+      borrowerId: req.user._id,
+    })
+      .populate("propertyId")
+      .populate("ownerId", "name email")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: loans.length,
+      loans,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// GET /api/admin/loans/:id
+export const getLoanById = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id)
+      .populate("propertyId")
+      .populate("borrowerId", "name email number address role")
+      .populate("ownerId", "name email number address role")
+      .populate("assignedBy", "name email role");
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found",
+      });
+    }
+
+    res.status(200).json(loan);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// PUT /api/admin/loans/:id
+export const updateLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found",
+      });
+    }
+
+    const { loanAmount, tenure, interestRate, status } = req.body;
+
+    if (loanAmount !== undefined) loan.loanAmount = loanAmount;
+    if (tenure !== undefined) loan.tenure = tenure;
+    if (interestRate !== undefined) loan.interestRate = interestRate;
+    if (status !== undefined) {
+      if (!["Pending", "Approved", "Rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value. Must be Pending, Approved, or Rejected." });
+      }
+      loan.status = status;
+    }
+
+    await loan.save();
+
+    res.status(200).json({
+      success: true,
+      loan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+};
+
+// DELETE /api/admin/loans/:id
+export const deleteLoan = async (req, res) => {
+  try {
+    const loan = await Loan.findById(req.params.id);
+
+    if (!loan) {
+      return res.status(404).json({
+        message: "Loan not found",
+      });
+    }
+
+    await Loan.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({
+      success: true,
+      message: "Loan deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
       message: error.message,
     });
   }

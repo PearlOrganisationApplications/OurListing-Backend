@@ -45,7 +45,15 @@ import {
   updateBroker,
   deleteBroker,
   updateLender,
-  deleteLender
+  deleteLender,
+  createLoan,
+  getAllLoans,
+  approveLoan,
+  rejectLoan,
+  getLoanById,
+  updateLoan,
+  deleteLoan,
+  getMyLoans
 } from '../controllers/admin.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -151,5 +159,23 @@ router.delete("/brokers/:id", protect, adminProtect, deleteBroker);
 
 router.put("/lenders/:id", protect, adminProtect, updateLender);
 router.delete("/lenders/:id", protect, adminProtect, deleteLender);
+
+
+//loan 
+router.post("/loans", protect, adminProtect, createLoan);
+
+router.get("/loans", protect, adminProtect, getAllLoans);
+
+router.get("/loans/my", protect, adminProtect, getMyLoans);
+
+router.get("/loans/:id", protect, adminProtect, getLoanById);
+
+router.put("/loans/:id", protect, adminProtect, updateLoan);
+
+router.delete("/loans/:id", protect, adminProtect, deleteLoan);
+
+router.put("/loans/:id/approve", protect, adminProtect, approveLoan);
+
+router.put("/loans/:id/reject", protect, adminProtect, rejectLoan);
 
 export default router;
