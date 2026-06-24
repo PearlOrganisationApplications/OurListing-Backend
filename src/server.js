@@ -7,6 +7,7 @@ import buyerRoutes from './routes/buyer.routes.js';
 import ownerRoutes from './routes/owner.routes.js';
 import brokerRoutes from './routes/broker.routes.js';
 import lenderRoutes from './routes/lender.routes.js';
+import planRoutes from './routes/plan.routes.js';
 
 import fs from 'fs';
 import path from 'path';
@@ -22,7 +23,7 @@ if (!fs.existsSync('uploads')) {
 }
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3333;
 
 app.use(cors());
 app.use(express.json());
@@ -35,6 +36,7 @@ app.use('/api/user', buyerRoutes);
 app.use('/api/owner', ownerRoutes);
 app.use('/api/broker', brokerRoutes);
 app.use('/api/lender', lenderRoutes);
+app.use('/api/plans', planRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

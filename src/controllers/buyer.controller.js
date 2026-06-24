@@ -1,8 +1,28 @@
+import Property from '../models/Property.js';
+import Favorite from '../models/Favorite.js';
+import mongoose from 'mongoose';  
+
+
+
+// Returns a Set of property IDs (as strings) the current user has favorited.
+// Returns an empty Set if there is no logged-in user (guest browsing).
+const getUserFavoriteIdSet = async (userId) => {
+  if (!userId) return new Set();
+  const favorites = await Favorite.find({ user: userId }).select('property');
+  return new Set(favorites.map((fav) => fav.property.toString()));
+};
+
+// export const getProperties = async (req, res) => {
+//   try {
+//     console.log(req.user)
+//     // Populate user to match the "user" object in the JSON spec
+//   const properties = await Property.find({}).populate('ownerId', 'name email number address role');
+//     const favoriteIds = await getUserFavoriteIdSet(req.user?._id);
 export const getProperties = async (req, res) => {
   try {
-    // Populate user to match the "user" object in the JSON spec
+    // Populate owner to match the "user" object in the JSON spec
     const properties = await Property.find({}).populate('ownerId', 'name email number address role');
-    
+    const favoriteIds = await getUserFavoriteIdSet(req.user?._id);
     // Format response to match spec
     const formattedProperties = properties.map(prop => ({
       id: prop._id,
@@ -25,7 +45,7 @@ export const getProperties = async (req, res) => {
       photos: prop.photos,
       propertyType: prop.propertyType,
       features: prop.features,
-      isFavorite: false // Default, needs favorite logic to be fully dynamic
+     isFavorite: favoriteIds.has(prop._id.toString())
     }));
 
     res.status(200).json(formattedProperties);
@@ -38,8 +58,14 @@ export const getPropertyDetails = async (req, res) => {
   try {
     const prop = await Property.findById(req.params.propertyId).populate('ownerId', 'name email number address role');
     
-    if (!prop) {
+  if (!prop) {
       return res.status(404).json({ message: 'Property not found' });
+    }
+
+    let isFavorite = false;
+    if (req.user?._id) {
+      const existing = await Favorite.findOne({ user: req.user._id, property: prop._id });
+      isFavorite = !!existing;
     }
 
     const formattedProperty = {
@@ -63,7 +89,7 @@ export const getPropertyDetails = async (req, res) => {
       photos: prop.photos,
       propertyType: prop.propertyType,
       features: prop.features,
-      isFavorite: false
+       isFavorite
     };
 
     res.status(200).json(formattedProperty);
@@ -83,8 +109,9 @@ export const getNearbyProperties = async (req, res) => {
     // In a real app with geospatial indexing, we'd use $near or $geoWithin.
     // Since we don't have a 2dsphere index mapped out, we will just return all properties for now
     // as a placeholder until the geospatial index is added to the schema.
-    const properties = await Property.find({}).populate('ownerId', 'name email number address role');
-    
+  const properties = await Property.find({}).populate('ownerId', 'name email number address role');
+    const favoriteIds = await getUserFavoriteIdSet(req.user?._id);
+
     const formattedProperties = properties.map(prop => ({
       id: prop._id,
       title: prop.title,
@@ -106,7 +133,7 @@ export const getNearbyProperties = async (req, res) => {
       photos: prop.photos,
       propertyType: prop.propertyType,
       features: prop.features,
-      isFavorite: false
+     isFavorite: favoriteIds.has(prop._id.toString())
     }));
 
     res.status(200).json(formattedProperties);
@@ -115,6 +142,10 @@ export const getNearbyProperties = async (req, res) => {
   }
 };
 
+// export const getFavorites = async (req, res) => {
+//   try {
+//     // Find all favorite entries for the authenticated user and populate property details
+//     const favorites = await Favorite.find({ user: req.user._id }).populate('property');
 export const getFavorites = async (req, res) => {
   try {
     // Find all favorite entries for the authenticated user and populate property details
@@ -127,18 +158,33 @@ export const getFavorites = async (req, res) => {
   }
 };
 
+// export const toggleFavorite = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     const propertyId = req.params.propertyId;
 export const toggleFavorite = async (req, res) => {
   try {
     const userId = req.user._id;
     const propertyId = req.params.propertyId;
-    // Check if the favorite already exists
+
+    if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json({ status: 'error', message: 'Invalid property ID' });
+    }
+    const propertyExists = await Property.exists({ _id: propertyId });
+    if (!propertyExists) {
+      return res.status(404).json({ status: 'error', message: 'Property not found' });
+    }
+
     const existing = await Favorite.findOne({ user: userId, property: propertyId });
+    let isFavorite;
     if (existing) {
       await existing.deleteOne();
+      isFavorite = false;
     } else {
       await Favorite.create({ user: userId, property: propertyId });
+      isFavorite = true;
     }
-    return res.status(200).json({ status: 'success', message: 'Favorite status updated' });
+    return res.status(200).json({ status: 'success', message: 'Favorite status updated', isFavorite });
   } catch (error) {
     console.error('toggleFavorite error:', error);
     return res.status(500).json({ status: 'error', message: error.message });
