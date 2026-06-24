@@ -222,7 +222,7 @@ export const recordPropertyClick = async (req, res) => {
 
     if (lead) {
       lead.lastContactAt = new Date();
-      lead.tag = 'hot';
+      lead.tag = 'HOT';
       await lead.save();
       return res.status(200).json({
         message: 'Property click registered. Lead updated to hot status.',
@@ -330,6 +330,52 @@ export const getSpecialUsers = async (req, res) => {
       count: users.length,
       data: users
     });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+export const getPropertiesByLocation =async (req, res) => {
+  try {
+    const { lat, lng } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({
+        success: false,
+        message: " Lat aur Long are required!"
+      });
+    }
+
+    // String ko pure number mein badlo
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lng);
+
+    const properties = await Property.find({
+      status: 'ACTIVE',
+      latitude: latitude,
+      longitude: longitude
+    })
+    .select('_id title location latitude longitude') 
+    .sort({ createdAt: -1 });
+
+    if (properties.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "on this location! cannot find the property!"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      count: properties.length,
+      data: properties
+    });
+
   } catch (error) {
     res.status(500).json({
       success: false,
