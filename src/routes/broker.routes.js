@@ -7,6 +7,8 @@ import {
   addProperty,
   getLeads,
   updateLeadTag,
+  deleteProperty,
+  updateProperty,
 } from '../controllers/broker.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -53,7 +55,16 @@ router.post(
   addProperty
 );
 
+
+router.put("/update/:id", protect, upload.fields([
+    { name: 'photos[]', maxCount: 10 },
+    { name: 'photos', maxCount: 10 },
+    { name: 'documents[]', maxCount: 10 },
+    { name: 'documents', maxCount: 10 },
+  ]), updateProperty)
+
 router.get('/leads', protect, brokerProtect, getLeads);
 router.patch('/leads/:leadId/tag', protect, brokerProtect, updateLeadTag);
+router.delete("/delete/:id", protect, deleteProperty);
 
 export default router;
