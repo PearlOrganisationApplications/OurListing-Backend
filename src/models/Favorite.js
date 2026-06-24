@@ -2,19 +2,14 @@ import mongoose from 'mongoose';
 
 const favoriteSchema = new mongoose.Schema(
   {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    propertyId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Property',
-      required: true,
-    },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    property: { type: mongoose.Schema.Types.ObjectId, ref: 'Property', required: true },
   },
   { timestamps: true }
 );
+
+// Ensure one favorite per user/property pair
+favoriteSchema.index({ user: 1, property: 1 }, { unique: true });
 
 const Favorite = mongoose.model('Favorite', favoriteSchema);
 

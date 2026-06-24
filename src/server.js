@@ -1,5 +1,8 @@
 import express from 'express';
 import cors from 'cors';
+import dns from "node:dns";
+
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -16,6 +19,11 @@ import chatRoutes from './routes/chat.routes.js';
 import initializeChatSocket from './socket/chat.socket.js';
 
 
+import adminRoutes from './routes/admin.routes.js';
+
+
+import fs from 'fs';
+import path from 'path';
 
 dotenv.config();
 
@@ -27,6 +35,11 @@ const __dirname = path.dirname(__filename);
 connectDB();
 
 // ─── Express app ──────────────────────────────────────────────────────────────
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads')) {
+  fs.mkdirSync('uploads');
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -59,6 +72,7 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 // ─── Static files — serve uploads folder ─────────────────────────────────────
 // MIGRATION NOTE: When switching to S3/Cloudinary,
@@ -72,6 +86,8 @@ app.use('/api/owner', ownerRoutes);
 app.use('/api/broker', brokerRoutes);
 app.use('/api/lender', lenderRoutes);
 app.use('/api/chats', chatRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 
 // ─── Health check ─────────────────────────────────────────────────────────────

@@ -24,6 +24,10 @@ const propertySchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    brokerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
   },
   { timestamps: true }
 );
