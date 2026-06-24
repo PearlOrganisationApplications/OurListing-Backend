@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProperties, getNearbyProperties, getPropertyDetails, getFavorites, toggleFavorite, recordPropertyClick } from '../controllers/buyer.controller.js';
+import { getProperties, getNearbyProperties, getPropertyDetails, getFavorites, toggleFavorite, recordPropertyClick, searchProperties } from '../controllers/buyer.controller.js';
 import { protect, optionalProtect } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
@@ -11,6 +11,7 @@ router.get('/properties/:propertyId', optionalProtect, getPropertyDetails);
 
 // Protected routes — require valid JWT
 router.get('/favorites', protect, getFavorites);
+router.get("/search-properties", searchProperties)
 router.post('/favorites/:propertyId', protect, toggleFavorite);
 router.post('/properties/:propertyId/click', protect, recordPropertyClick);
 
