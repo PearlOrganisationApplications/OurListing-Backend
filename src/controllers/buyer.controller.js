@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import Property from '../models/Property.js';
 import Favorite from '../models/Favorite.js';
 import mongoose from 'mongoose';  
@@ -18,6 +19,13 @@ const getUserFavoriteIdSet = async (userId) => {
 //     // Populate user to match the "user" object in the JSON spec
 //   const properties = await Property.find({}).populate('ownerId', 'name email number address role');
 //     const favoriteIds = await getUserFavoriteIdSet(req.user?._id);
+=======
+import mongoose from 'mongoose';
+import Property from '../models/Property.js';
+import Lead from '../models/Lead.js';
+import User from '../models/User.js';
+
+>>>>>>> 97e0578f7fb3691377732259bb7aedd288649f68
 export const getProperties = async (req, res) => {
   try {
     // Populate owner to match the "user" object in the JSON spec
@@ -188,5 +196,68 @@ export const toggleFavorite = async (req, res) => {
   } catch (error) {
     console.error('toggleFavorite error:', error);
     return res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+export const recordPropertyClick = async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    const userId = req.user._id;
+    const buyerName = req.user.name;
+    const buyerPhone = req.user.number || req.user.phone || 'N/A';
+
+    if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json({ message: 'Invalid property ID format.' });
+    }
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
+
+    // Resolve broker ID
+    let brokerId = property.brokerId;
+    if (!brokerId) {
+      // Fallback to first broker in system if property has no assigned broker
+      const anyBroker = await User.findOne({ role: 'broker' });
+      if (!anyBroker) {
+        return res.status(400).json({ message: 'No broker available in the system to handle this lead.' });
+      }
+      brokerId = anyBroker._id;
+    }
+
+    // Check if lead already exists for this broker, phone and interestedProperty
+    let lead = await Lead.findOne({
+      brokerId,
+      phone: buyerPhone,
+      interestedProperty: propertyId
+    });
+
+    if (lead) {
+      lead.lastContactAt = new Date();
+      lead.tag = 'hot';
+      await lead.save();
+      return res.status(200).json({
+        message: 'Property click registered. Lead updated to hot status.',
+        lead
+      });
+    }
+
+    // Create a new lead
+    lead = await Lead.create({
+      name: buyerName,
+      phone: buyerPhone,
+      type: 'buyer',
+      tag: 'warm',
+      interestedProperty: propertyId,
+      brokerId
+    });
+
+    res.status(201).json({
+      message: 'Property click registered. Created a new lead.',
+      lead
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };
