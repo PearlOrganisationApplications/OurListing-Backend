@@ -29,7 +29,7 @@ export const adminRegister = async (req, res) => {
       password,
       number,
       address,
-      role: 'admin', // Force admin role
+      role: 'ADMIN', // Force admin role
     });
 
     res.status(201).json({
@@ -55,7 +55,7 @@ export const adminLogin = async (req, res) => {
       return res.status(401).json({ message: 'Invalid email or password' });
     }
 
-    if (user.role !== 'admin') {
+    if (user.role !== 'ADMIN') {
       return res.status(403).json({ message: 'Access denied. User is not an admin.' });
     }
 
@@ -95,11 +95,11 @@ export const getAdminProfile = async (req, res) => {
 export const getDashboardStats = async (req, res) => {
   try {
     // User counts by role
-    const buyerCount = await User.countDocuments({ role: 'buyer' });
-    const ownerCount = await User.countDocuments({ role: 'owner' });
-    const brokerCount = await User.countDocuments({ role: 'broker' });
-    const lenderCount = await User.countDocuments({ role: 'lender' });
-    const adminCount = await User.countDocuments({ role: 'admin' });
+    const buyerCount = await User.countDocuments({ role: 'BUYER' });
+    const ownerCount = await User.countDocuments({ role: 'OWNER' });
+    const brokerCount = await User.countDocuments({ role: 'BROKER' });
+    const lenderCount = await User.countDocuments({ role: 'LENDER' });
+    const adminCount = await User.countDocuments({ role: 'ADMIN' });
     const totalUsers = buyerCount + ownerCount + brokerCount + lenderCount + adminCount;
 
     // Property counts by status
@@ -224,7 +224,7 @@ export const createUser = async (req, res) => {
       name,
       email,
       password,
-      role: role || 'buyer',
+      role: role || 'BUYER',
       number,
       address
     });

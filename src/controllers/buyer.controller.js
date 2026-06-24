@@ -206,7 +206,7 @@ export const recordPropertyClick = async (req, res) => {
     let brokerId = property.brokerId;
     if (!brokerId) {
       // Fallback to first broker in system if property has no assigned broker
-      const anyBroker = await User.findOne({ role: 'broker' });
+      const anyBroker = await User.findOne({ role: 'BROKER' });
       if (!anyBroker) {
         return res.status(400).json({ message: 'No broker available in the system to handle this lead.' });
       }

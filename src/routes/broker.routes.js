@@ -29,7 +29,7 @@ const upload = multer({ storage });
 
 // Role check middleware for broker
 const brokerProtect = (req, res, next) => {
-  if (req.user && req.user.role === 'broker') {
+  if (req.user && req.user.role === 'BROKER') {
     next();
   } else {
     res.status(403).json({ message: 'Access denied. Broker role required.' });

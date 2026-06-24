@@ -34,8 +34,8 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['buyer', 'owner', 'broker', 'lender', 'admin'],
-      default: 'buyer',
+      enum: ['BUYER', 'OWNER', 'BROKER', 'LENDER', 'ADMIN'],
+      default: 'BUYER',
     },
   },
   { timestamps: true }

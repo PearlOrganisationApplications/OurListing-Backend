@@ -22,7 +22,7 @@ const seedAdmin = async () => {
       password: 'admin123', // This will be automatically hashed by User.js pre-save hook
       number: '1234567890',
       address: 'Admin Headquarters',
-      role: 'admin'
+      role: 'ADMIN'
     };
 
     const admin = await User.create(defaultAdmin);
