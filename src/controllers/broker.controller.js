@@ -419,3 +419,70 @@ export const updateProperty =  async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+export const getMapPins = async (req, res) => {
+  try {
+    const { lat, lng, radius = 10 } = req.query;
+
+    if (!lat || !lng) {
+      return res.status(400).json({ success: false, message: "Lat/Lng missing!" });
+    }
+
+    const userLat = parseFloat(lat);
+    const userLng = parseFloat(lng);
+    const maxDistanceKm = parseFloat(radius);
+
+    const properties = await Property.aggregate([
+      {
+        $addFields: {
+          distance: {
+            $sqrt: {
+              $add: [
+                { $pow: [{ $subtract: ["$latitude", userLat] }, 2] },
+                { $pow: [{ $subtract: ["$longitude", userLng] }, 2] }
+              ]
+            }
+          }
+        }
+      },
+      {
+        $addFields: {
+          distanceInKm: { $multiply: ["$distance", 111.32] }
+        }
+      },
+      {
+        $match: {
+          status: 'ACTIVE',
+          distanceInKm: { $lte: maxDistanceKm }
+        }
+      },
+      {
+        $sort: { distanceInKm: 1 }
+      },
+      {
+        $project: {
+          _id: 1,
+          title: 1,
+          location: 1,
+          latitude: 1,
+          longitude: 1,
+          distanceInKm: { $round: ["$distanceInKm", 2] } 
+        }
+      }
+    ]);
+
+    res.status(200).json({
+      success: true,
+      count: properties.length,
+      data: properties
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Proximity Search Failed",
+      error: error.message
+    });
+  }
+};

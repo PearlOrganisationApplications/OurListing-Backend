@@ -4,8 +4,7 @@ import Favorite from '../models/Favorite.js';
 import Lead from '../models/Lead.js';
 import User from '../models/User.js';
 
-// Returns a Set of property IDs (as strings) the current user has favorited.
-// Returns an empty Set if there is no logged-in user (guest browsing).
+
 const getUserFavoriteIdSet = async (userId) => {
   if (!userId) return new Set();
   const favorites = await Favorite.find({ user: userId }).select('property');
@@ -347,11 +346,10 @@ export const getPropertiesByLocation =async (req, res) => {
     if (!lat || !lng) {
       return res.status(400).json({
         success: false,
-        message: " Lat aur Long are required!"
+        message: " Lat and Long are required!"
       });
     }
 
-    // String ko pure number mein badlo
     const latitude = parseFloat(lat);
     const longitude = parseFloat(lng);
 
@@ -366,7 +364,7 @@ export const getPropertiesByLocation =async (req, res) => {
     if (properties.length === 0) {
       return res.status(404).json({
         success: false,
-        message: "on this location! cannot find the property!"
+        message: "On this location! cannot find the property!"
       });
     }
 
