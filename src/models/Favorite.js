@@ -14,3 +14,6 @@ favoriteSchema.index({ user: 1, property: 1 }, { unique: true });
 const Favorite = mongoose.model('Favorite', favoriteSchema);
 
 export default Favorite;
+
+// Prevent the same user from favoriting the same property twice (DB-level integrity)
+favoriteSchema.index({ user: 1, property: 1 }, { unique: true });

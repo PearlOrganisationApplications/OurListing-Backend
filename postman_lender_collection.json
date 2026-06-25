@@ -1,0 +1,366 @@
+{
+  "info": {
+    "name": "OurListing – Lender Module (Full Test)",
+    "_postman_id": "lender-module-v3",
+    "description": "Full lender module test collection.\nBase URL: http://localhost:3000\n\nHow to use:\n1. Import this file into Postman.\n2. Run requests IN ORDER (top to bottom).\n3. Token + IDs are auto-saved by test scripts — you do NOT need to copy-paste anything manually.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",       "value": "http://localhost:3000" },
+    { "key": "token",          "value": "" },
+    { "key": "mortgage_id",    "value": "" },
+    { "key": "application_id", "value": "" },
+    { "key": "pipeline_id",    "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "STEP 1 – Register Lender",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"James Lender\",\n  \"email\": \"lender@test.com\",\n  \"password\": \"Test1234!\",\n  \"number\": \"555-0199\",\n  \"address\": \"123 Finance Ave\",\n  \"role\": \"lender\"\n}"
+        },
+        "description": "Creates a lender account. If already registered, skip to STEP 2 (Login)."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.token) {",
+              "  pm.collectionVariables.set('token', res.token);",
+              "  console.log('✅ Token saved from Register');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "STEP 2 – Login Lender",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"lender@test.com\",\n  \"password\": \"Test1234!\"\n}"
+        },
+        "description": "Login to get a fresh JWT. Token is auto-saved to {{token}} variable."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.token) {",
+              "  pm.collectionVariables.set('token', res.token);",
+              "  console.log('✅ Token saved from Login:', res.token.slice(0,20) + '...');",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "STEP 3 – Seed Mortgage Listing 1 (Single Family – Ready to Buy)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/mortgages",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propertyType\": \"Single Family Home\",\n  \"propertyAddress\": \"742 Evergreen Terrace, Springfield, IL\",\n  \"propertyImage\": \"https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400\",\n  \"buyerName\": \"Amit Sharma\",\n  \"purchasePrice\": \"500000\",\n  \"requestedLoan\": \"400000\",\n  \"ltvRatio\": \"80\",\n  \"ficoScore\": \"720-739\",\n  \"buyerIntent\": \"Ready to Buy\"\n}"
+        },
+        "description": "Creates a mortgage marketplace listing (the 'lead'). mortgage_id is auto-saved."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.data && res.data.listing) {",
+              "  pm.collectionVariables.set('mortgage_id', res.data.listing._id);",
+              "  console.log('✅ mortgage_id saved:', res.data.listing._id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "STEP 4 – Seed Mortgage Listing 2 (Condo – Under Contract)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/mortgages",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propertyType\": \"Condo\",\n  \"propertyAddress\": \"100 Ocean Drive, Miami, FL\",\n  \"propertyImage\": \"https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400\",\n  \"buyerName\": \"Priya Mehta\",\n  \"purchasePrice\": \"800000\",\n  \"requestedLoan\": \"765000\",\n  \"ltvRatio\": \"78\",\n  \"ficoScore\": \"740+\",\n  \"buyerIntent\": \"Under Contract\"\n}"
+        },
+        "description": "Seeds a second listing so the marketplace has multiple cards."
+      }
+    },
+
+    {
+      "name": "STEP 5 – Seed Mortgage Listing 3 (Townhouse – Pre-Approval Needed)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/mortgages",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"propertyType\": \"Townhouse\",\n  \"propertyAddress\": \"88 Riverside Blvd, Austin, TX\",\n  \"propertyImage\": \"https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400\",\n  \"buyerName\": \"Ravi Kumar\",\n  \"purchasePrice\": \"350000\",\n  \"requestedLoan\": \"304000\",\n  \"ltvRatio\": \"87\",\n  \"ficoScore\": \"680-719\",\n  \"buyerIntent\": \"Pre-Approval Needed\"\n}"
+        },
+        "description": "Seeds a third listing matching the UI screenshot card."
+      }
+    },
+
+    {
+      "name": "STEP 6 – GET Mortgage Marketplace (verify listings)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/lender/mortgages",
+        "description": "Should return all 3 listings you just created. This is what the 'Mortgage Marketplace' UI screen shows."
+      }
+    },
+
+    {
+      "name": "STEP 7 – Create Application (Hot Lead – from listing 1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/applications",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicantName\": \"Amit Sharma\",\n  \"city\": \"Springfield\",\n  \"state\": \"IL\",\n  \"loanAmount\": 400000,\n  \"downPayment\": \"20%\",\n  \"creditBand\": \"720-739\",\n  \"ficoScore\": 725,\n  \"propertyImage\": \"https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400\",\n  \"tag\": \"hot\",\n  \"status\": \"Review\"\n}"
+        },
+        "description": "Lender evaluates the lead from listing 1 and creates an application. application_id is auto-saved."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.data && res.data.application) {",
+              "  pm.collectionVariables.set('application_id', res.data.application._id);",
+              "  console.log('✅ application_id saved:', res.data.application._id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "STEP 8 – Create Application (Warm Lead)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/applications",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicantName\": \"Priya Mehta\",\n  \"city\": \"Miami\",\n  \"state\": \"FL\",\n  \"loanAmount\": 765000,\n  \"downPayment\": \"10%\",\n  \"creditBand\": \"740+\",\n  \"ficoScore\": 745,\n  \"propertyImage\": \"https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400\",\n  \"tag\": \"warm\",\n  \"status\": \"Review\"\n}"
+        },
+        "description": "Second application – warm tag. Adds more data to dashboard."
+      }
+    },
+
+    {
+      "name": "STEP 9 – GET Hot Leads (verify)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/lender/hot-leads",
+        "description": "Should return Amit Sharma (tag=hot). This is the 'Hot Leads' section in the dashboard."
+      }
+    },
+
+    {
+      "name": "STEP 10 – Update Application → Pre-Approved",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/applications/{{application_id}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": \"Pre-Approved\",\n  \"tag\": \"warm\"\n}"
+        },
+        "description": "Moves Amit's application from Review → Pre-Approved. Uses auto-saved application_id.\nValid statuses: Review | Pre-Approved | Rejected | Funded\nValid tags:    hot | warm | cold"
+      }
+    },
+
+    {
+      "name": "STEP 11 – Create Pipeline Entry (Pre-Approval stage)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/pipeline",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicantName\": \"Amit Sharma\",\n  \"propertyAddress\": \"742 Evergreen Terrace, Springfield, IL\",\n  \"propertyImage\": \"https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400\",\n  \"loanType\": \"Conventional\",\n  \"stage\": \"Pre-Approval\",\n  \"pipelineStatus\": \"Active\",\n  \"closingDate\": \"2026-09-30\",\n  \"loanAmount\": 400000\n}"
+        },
+        "description": "Adds Amit's loan to the pipeline. pipeline_id is auto-saved.\nValid stages:  Pre-Approval | Processing | Appraisal | Underwriting | Clear-to-Close | Funded\nValid status:  Active | Approved | Draft\nValid loanType: Conventional | FHA | VA | USDA | Jumbo | 30-Year Fixed | 15-Year Fixed | ARM 5/1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const res = pm.response.json();",
+              "if (res.data && res.data.pipeline) {",
+              "  pm.collectionVariables.set('pipeline_id', res.data.pipeline._id);",
+              "  console.log('✅ pipeline_id saved:', res.data.pipeline._id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "STEP 12 – Create Pipeline Entry 2 (Underwriting – for Pending Approvals)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/pipeline",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"applicantName\": \"Priya Mehta\",\n  \"propertyAddress\": \"100 Ocean Drive, Miami, FL\",\n  \"propertyImage\": \"https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400\",\n  \"loanType\": \"Jumbo\",\n  \"stage\": \"Underwriting\",\n  \"pipelineStatus\": \"Active\",\n  \"closingDate\": \"2026-10-15\",\n  \"loanAmount\": 765000\n}"
+        },
+        "description": "This entry is at Underwriting stage so it shows in 'Pending Approvals' section of dashboard."
+      }
+    },
+
+    {
+      "name": "STEP 13 – GET Pending Approvals (verify)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/lender/pending-approvals",
+        "description": "Should return Priya Mehta's entry (stage=Underwriting)."
+      }
+    },
+
+    {
+      "name": "STEP 14 – GET Pipeline (All active)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/lender/pipeline",
+        "description": "Returns all non-Funded pipeline entries. Should show both Amit and Priya."
+      }
+    },
+
+    {
+      "name": "STEP 15 – GET Pipeline filtered (Active only)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": {
+          "raw": "{{base_url}}/api/lender/pipeline?status=Active",
+          "query": [{ "key": "status", "value": "Active" }]
+        },
+        "description": "Filter by pipelineStatus=Active. Valid values: Active | Approved | Draft"
+      }
+    },
+
+    {
+      "name": "STEP 16 – Advance Pipeline Stage → Underwriting",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/pipeline/{{pipeline_id}}/stage",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stage\": \"Underwriting\",\n  \"pipelineStatus\": \"Active\"\n}"
+        },
+        "description": "Moves Amit's pipeline from Pre-Approval → Underwriting. Uses auto-saved pipeline_id."
+      }
+    },
+
+    {
+      "name": "STEP 17 – Advance Pipeline Stage → Clear-to-Close",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/pipeline/{{pipeline_id}}/stage",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stage\": \"Clear-to-Close\",\n  \"pipelineStatus\": \"Approved\",\n  \"closingDate\": \"2026-09-28\"\n}"
+        },
+        "description": "One step before Funded."
+      }
+    },
+
+    {
+      "name": "STEP 18 – Advance Pipeline Stage → FUNDED ⭐",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type",  "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/lender/pipeline/{{pipeline_id}}/stage",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"stage\": \"Funded\",\n  \"pipelineStatus\": \"Approved\",\n  \"closingDate\": \"2026-09-28\"\n}"
+        },
+        "description": "Marks the loan as FUNDED. Server auto-sets fundedYear = current year. This updates 'Deals Closed (YTD)' KPI on Dashboard."
+      }
+    },
+
+    {
+      "name": "STEP 19 – GET Dashboard (final check ⭐)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/lender/dashboard",
+        "description": "The FINAL check. You should see:\n- active_leads: count of non-rejected/funded applications\n- pending_approvals: count of pipeline entries at Pre-Approval or Underwriting\n- deals_closed: Amit's $400K loan (shown as '$400K')\n- hot_leads: list\n- pending_approvals: list\n- active_pipeline: list (Amit's entry gone because it's now Funded)"
+      }
+    }
+
+  ]
+}
