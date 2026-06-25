@@ -42,24 +42,36 @@ export const getDashboard = async (req, res) => {
     // ── KPI 1: Active Leads = all non-Rejected, non-Funded applications ──────
     const activeLeadsCount = await LenderApplication.countDocuments({
       $or: [{ lenderId }, { lenderId: null }],
-      status: { $nin: ['Rejected', 'Funded'] },
+      status: 'REVIEW',
     });
 
-    // ── KPI 2: Total Apps = all applications ─────────────────────────────────
-    const totalAppsCount = await LenderApplication.countDocuments({
-      $or: [{ lenderId }, { lenderId: null }],
+    // ── KPI 2: Pre-approved = pipeline entries at "Pre-Approval" stage ───────
+    const preApprovedCount = await LenderPipeline.countDocuments({
+      lenderId,
+      stage: 'PRE-APPROVAL',
     });
 
     // ── KPI 3: Pending Approvals = pipeline at Pre-Approval or Underwriting ──
     const pendingApprCount = await LenderPipeline.countDocuments({
       lenderId,
-      stage: { $in: ['Pre-Approval', 'Underwriting'] },
+      stage: 'UNDERWRITING',
     });
 
     // ── KPI 4: Deals Closed (YTD funded total) ───────────────────────────────
     const fundedAggResult = await LenderPipeline.aggregate([
-      { $match: { lenderId, stage: 'Funded', fundedYear: currentYear } },
-      { $group: { _id: null, total: { $sum: '$loanAmount' } } },
+      {
+        $match: {
+          lenderId,
+          stage: 'FUNDED',
+          fundedYear: currentYear,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: '$loanAmount' },
+        },
+      },
     ]);
     const totalFundedRaw = fundedAggResult.length > 0 ? fundedAggResult[0].total : 0;
     const dealsClosed = formatCurrency(totalFundedRaw);
@@ -67,7 +79,7 @@ export const getDashboard = async (req, res) => {
     // ── Hot Leads (tag = "hot") ───────────────────────────────────────────────
     const hotLeadsDocs = await LenderApplication.find({
       $or: [{ lenderId }, { lenderId: null }],
-      tag: 'hot',
+      status: 'REVIEW',
     }).sort({ createdAt: -1 });
 
     const hotLeads = hotLeadsDocs.map((app) => ({
@@ -105,7 +117,7 @@ export const getDashboard = async (req, res) => {
     // ── Active Pipeline (all non-Funded) ─────────────────────────────────────
     const activePipelineDocs = await LenderPipeline.find({
       lenderId,
-      stage: { $nin: ['Funded'] },
+      stage: { $nin: ['FUNDED'] },
     }).sort({ createdAt: -1 });
 
     const activePipeline = activePipelineDocs.map((pipe) => ({
@@ -271,132 +283,39 @@ export const getMortgages = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// POST /api/lender/applications
-// Create a lender application (for seeding / admin / testing)
-// Body: { applicantName, city, state, loanAmount, downPayment,
-//         creditBand, ficoScore, propertyImage, tag, status, lenderId }
+// GET /api/lender/mortgages/:id
+// Retrieves a single mortgage listing by its ID.
 // ─────────────────────────────────────────────────────────────────────────────
-export const createApplication = async (req, res) => {
+export const getMortgageById = async (req, res) => {
   try {
-    const {
-      applicantName, city, state, loanAmount, downPayment,
-      creditBand, ficoScore, propertyImage, tag, status, lenderId,
-    } = req.body;
+    const listing = await MortgageListing.findById(req.params.id);
 
-    const app = await LenderApplication.create({
-      applicantName, city, state, loanAmount, downPayment,
-      creditBand, ficoScore, propertyImage, tag, status, lenderId: lenderId || null,
+    if (!listing) {
+      return res.status(404).json({ status: 'error', message: 'Mortgage listing not found' });
+    }
+
+    const formattedListing = {
+      id: listing._id.toString(),
+      property_type: listing.propertyType,
+      property_address: listing.propertyAddress,
+      purchase_price: listing.purchasePrice,
+      requested_loan: listing.requestedLoan,
+      ltv_ratio: listing.ltvRatio,
+      fico_score: listing.ficoScore,
+      buyer_intent: listing.buyerIntent,
+      posted_date: listing.postedDate
+        ? listing.postedDate.toISOString().split('T')[0]
+        : null,
+    };
+
+    return res.status(200).json({
+      status: 'success',
+      data: {
+        listing: formattedListing,
+      },
     });
-
-    return res.status(201).json({ status: 'success', data: { application: app } });
   } catch (error) {
-    console.error('createApplication error:', error);
-    return res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/lender/applications/:id/status
-// Update application status and/or tag
-// Body: { status?: string, tag?: string }
-// ─────────────────────────────────────────────────────────────────────────────
-export const updateApplicationStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status, tag } = req.body;
-
-    const update = {};
-    if (status) update.status = status;
-    if (tag) update.tag = tag;
-
-    const app = await LenderApplication.findByIdAndUpdate(id, update, { new: true });
-    if (!app) return res.status(404).json({ status: 'error', message: 'Application not found' });
-
-    return res.status(200).json({ status: 'success', data: { application: app } });
-  } catch (error) {
-    console.error('updateApplicationStatus error:', error);
-    return res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/lender/mortgages
-// Seed / create a MortgageListing (marketplace entry) for testing
-// Body: { propertyType, propertyAddress, propertyImage, buyerName,
-//         purchasePrice, requestedLoan, ltvRatio, ficoScore,
-//         buyerIntent, postedDate }
-// ─────────────────────────────────────────────────────────────────────────────
-export const createMortgageListing = async (req, res) => {
-  try {
-    const {
-      propertyType, propertyAddress, propertyImage, buyerName,
-      purchasePrice, requestedLoan, ltvRatio, ficoScore,
-      buyerIntent, postedDate,
-    } = req.body;
-
-    const listing = await MortgageListing.create({
-      propertyType, propertyAddress, propertyImage, buyerName,
-      purchasePrice, requestedLoan, ltvRatio, ficoScore,
-      buyerIntent, postedDate: postedDate || new Date(),
-    });
-
-    return res.status(201).json({ status: 'success', data: { listing } });
-  } catch (error) {
-    console.error('createMortgageListing error:', error);
-    return res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/lender/pipeline
-// Create a pipeline entry (for seeding / admin / testing)
-// Body: { applicantName, propertyAddress, propertyImage, loanType, stage,
-//         pipelineStatus, closingDate, loanAmount, fundedYear }
-// lenderId is taken from JWT token (req.user._id)
-// ─────────────────────────────────────────────────────────────────────────────
-export const createPipelineEntry = async (req, res) => {
-  try {
-    const {
-      applicantName, propertyAddress, propertyImage, loanType, stage,
-      pipelineStatus, closingDate, loanAmount, fundedYear,
-    } = req.body;
-    const lenderId = req.user._id;
-
-    const entry = await LenderPipeline.create({
-      applicantName, propertyAddress, propertyImage, loanType, stage,
-      pipelineStatus, closingDate, loanAmount, fundedYear, lenderId,
-    });
-
-    return res.status(201).json({ status: 'success', data: { pipeline: entry } });
-  } catch (error) {
-    console.error('createPipelineEntry error:', error);
-    return res.status(500).json({ status: 'error', message: error.message });
-  }
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/lender/pipeline/:id/stage
-// Update pipeline stage and/or pipelineStatus
-// Body: { stage?: string, pipelineStatus?: string, closingDate?: string }
-// Auto-sets fundedYear when stage === "Funded"
-// ─────────────────────────────────────────────────────────────────────────────
-export const updatePipelineStage = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { stage, pipelineStatus, closingDate } = req.body;
-
-    const update = {};
-    if (stage) update.stage = stage;
-    if (pipelineStatus) update.pipelineStatus = pipelineStatus;
-    if (closingDate) update.closingDate = closingDate;
-    if (stage === 'Funded') update.fundedYear = new Date().getFullYear();
-
-    const entry = await LenderPipeline.findByIdAndUpdate(id, update, { new: true });
-    if (!entry) return res.status(404).json({ status: 'error', message: 'Pipeline entry not found' });
-
-    return res.status(200).json({ status: 'success', data: { pipeline: entry } });
-  } catch (error) {
-    console.error('updatePipelineStage error:', error);
+    console.error('getMortgageById error:', error);
     return res.status(500).json({ status: 'error', message: error.message });
   }
 };

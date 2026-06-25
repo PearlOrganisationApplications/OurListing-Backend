@@ -176,3 +176,156 @@ export const toggleFavorite = async (req, res) => {
     return res.status(500).json({ status: 'error', message: error.message });
   }
 };
+
+export const recordPropertyClick = async (req, res) => {
+  try {
+    const { propertyId } = req.params;
+    const userId = req.user._id;
+    const buyerName = req.user.name;
+    const buyerPhone = req.user.number || req.user.phone || 'N/A';
+
+    if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+      return res.status(400).json({ message: 'Invalid property ID format.' });
+    }
+
+    const property = await Property.findById(propertyId);
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found.' });
+    }
+
+    // Resolve broker ID
+    let brokerId = property.brokerId;
+    if (!brokerId) {
+      // Fallback to first broker in system if property has no assigned broker
+      const anyBroker = await User.findOne({ role: 'BROKER' });
+      if (!anyBroker) {
+        return res.status(400).json({ message: 'No broker available in the system to handle this lead.' });
+      }
+      brokerId = anyBroker._id;
+    }
+
+    // Check if lead already exists for this broker, phone and interestedProperty
+    let lead = await Lead.findOne({
+      brokerId,
+      phone: buyerPhone,
+      interestedProperty: propertyId
+    });
+
+    if (lead) {
+      lead.lastContactAt = new Date();
+      lead.tag = 'hot';
+      await lead.save();
+      return res.status(200).json({
+        message: 'Property click registered. Lead updated to hot status.',
+        lead
+      });
+    }
+
+    // Create a new lead
+    lead = await Lead.create({
+      name: buyerName,
+      phone: buyerPhone,
+      type: 'BUYER',
+      tag: 'WARM',
+      interestedProperty: propertyId,
+      brokerId
+    });
+
+    res.status(201).json({
+      message: 'Property click registered. Created a new lead.',
+      lead
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+export const searchProperties = async (req, res) => {
+  try {
+    const { 
+      location, 
+      lat, 
+      lng, 
+      radius = 10, 
+      listingType, 
+      minPrice, 
+      maxPrice,
+      propertyType 
+    } = req.query;
+
+    let query = {};
+
+    if (location) {
+      query.location = { $regex: location, $options: 'i' };
+    }
+
+    
+    if (lat && lng) {
+      const distanceInDegrees = radius / 111.32; 
+      
+      query.latitude = {
+        $gte: parseFloat(lat) - distanceInDegrees,
+        $lte: parseFloat(lat) + distanceInDegrees
+      };
+      query.longitude = {
+        $gte: parseFloat(lng) - distanceInDegrees,
+        $lte: parseFloat(lng) + distanceInDegrees
+      };
+    }
+
+    if (listingType) query.listingType = listingType;
+    if (propertyType) query.propertyType = propertyType;
+    
+    if (minPrice || maxPrice) {
+      query.price = {};
+      if (minPrice) query.price.$gte = Number(minPrice);
+      if (maxPrice) query.price.$lte = Number(maxPrice);
+    }
+
+    query.status = 'Active';
+
+    const properties = await Property.find(query)
+      .populate('ownerId', 'name email') 
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      count: properties.length,
+      data: properties
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};
+
+
+export const getSpecialUsers = async (req, res) => {
+  try {
+ 
+    
+    const targetRoles = ['OWNER', 'BROKER', 'LENDER'];
+
+    const users = await User.find({
+      role: { $in: targetRoles }
+    }).select('-password'); 
+
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Server Error",
+      error: error.message
+    });
+  }
+};

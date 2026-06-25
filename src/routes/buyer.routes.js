@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProperties, getNearbyProperties, getPropertyDetails, getFavorites, toggleFavorite } from '../controllers/buyer.controller.js';
+import { getProperties, getNearbyProperties, getPropertyDetails, getFavorites, toggleFavorite, recordPropertyClick, searchProperties, getSpecialUsers } from '../controllers/buyer.controller.js';
 import { protect, optionalProtect } from '../middlewares/auth.middleware.js';
 const router = express.Router();
 
@@ -12,5 +12,7 @@ router.get('/properties/:propertyId', optionalProtect, getPropertyDetails);
 // Favorites require a logged-in user
 router.get('/favorites', protect, getFavorites);
 router.post('/favorites/:propertyId', protect, toggleFavorite);
+router.post('/properties/:propertyId/click', protect, recordPropertyClick);
+router.get("/get-special-users", getSpecialUsers)
 
 export default router;
