@@ -2,7 +2,6 @@ import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
 import MortgageListing from '../models/MortgageListing.js';
-import Loan from "../models/Loan.js";
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id) => {
@@ -586,7 +585,7 @@ export const getLeadById = async (req, res) => {
     const lead = await Lead.findById(req.params.id)
       .populate('brokerId', 'name email role number address')
       .populate('interestedProperty', 'title price location listingType status');
-      
+
     if (!lead) {
       return res.status(404).json({ message: 'Lead not found' });
     }
@@ -817,17 +816,31 @@ export const deleteMortgage = async (req, res) => {
 };
 
 
-
 // GET /api/admin/buyers
 export const getAllBuyers = async (req, res) => {
   try {
-    const buyers = await User.find({ role: "buyer" || "BUYER" })
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({
+      role: { $in: ["buyer", "BUYER"] },
+    });
+
+    const buyers = await User.find({
+      role: { $in: ["buyer", "BUYER"] },
+    })
       .select("-password")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
       count: buyers.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       buyers,
     });
   } catch (error) {
@@ -838,17 +851,31 @@ export const getAllBuyers = async (req, res) => {
   }
 };
 
-
 // GET /api/admin/owners
 export const getAllOwners = async (req, res) => {
   try {
-    const owners = await User.find({ role: "owner" || "OWNER" })
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({
+      role: { $in: ["owner", "OWNER"] },
+    });
+
+    const owners = await User.find({
+      role: { $in: ["owner", "OWNER"] },
+    })
       .select("-password")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
       count: owners.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       owners,
     });
   } catch (error) {
@@ -864,13 +891,28 @@ export const getAllOwners = async (req, res) => {
 // GET /api/admin/brokers
 export const getAllBrokers = async (req, res) => {
   try {
-    const brokers = await User.find({ role: "broker" || "BROKER" })
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({
+      role: { $in: ["broker", "BROKER"] },
+    });
+
+    const brokers = await User.find({
+      role: { $in: ["broker", "BROKER"] },
+    })
       .select("-password")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
       count: brokers.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       brokers,
     });
   } catch (error) {
@@ -882,16 +924,35 @@ export const getAllBrokers = async (req, res) => {
 };
 
 
+
+
+
+
 // GET /api/admin/lenders
 export const getAllLenders = async (req, res) => {
   try {
-    const lenders = await User.find({ role: "lender" || "LENDER" })
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({
+      role: { $in: ["lender", "LENDER"] },
+    });
+
+    const lenders = await User.find({
+      role: { $in: ["lender", "LENDER"] },
+    })
       .select("-password")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     res.status(200).json({
       success: true,
       count: lenders.length,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
       lenders,
     });
   } catch (error) {
@@ -904,13 +965,19 @@ export const getAllLenders = async (req, res) => {
 
 
 
-
 // PUT /api/admin/buyers/:id
 export const updateBuyer = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const buyer = await User.findOne({
       _id: req.params.id,
-      role: "buyer",
+      role: { $in: ["buyer", "BUYER"] },
     });
 
     if (!buyer) {
@@ -922,18 +989,36 @@ export const updateBuyer = async (req, res) => {
 
     const { name, email, number, address, password } = req.body;
 
+    if (email) {
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.params.id },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      buyer.email = email;
+    }
+
     if (name) buyer.name = name;
-    if (email) buyer.email = email;
     if (number) buyer.number = number;
     if (address) buyer.address = address;
     if (password) buyer.password = password;
 
     await buyer.save();
 
+    const buyerResponse = buyer.toObject();
+    delete buyerResponse.password;
+
     res.status(200).json({
       success: true,
       message: "Buyer updated successfully",
-      buyer,
+      buyer: buyerResponse,
     });
   } catch (error) {
     res.status(500).json({
@@ -945,12 +1030,20 @@ export const updateBuyer = async (req, res) => {
 
 
 
+
 // DELETE /api/admin/buyers/:id
 export const deleteBuyer = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const buyer = await User.findOne({
       _id: req.params.id,
-      role: "buyer",
+      role: { $in: ["buyer", "BUYER"] },
     });
 
     if (!buyer) {
@@ -960,7 +1053,7 @@ export const deleteBuyer = async (req, res) => {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await buyer.deleteOne();
 
     res.status(200).json({
       success: true,
@@ -975,12 +1068,22 @@ export const deleteBuyer = async (req, res) => {
 };
 
 
+
+
+
 // PUT /api/admin/owners/:id
 export const updateOwner = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const owner = await User.findOne({
       _id: req.params.id,
-      role: "owner",
+      role: { $in: ["owner", "OWNER"] },
     });
 
     if (!owner) {
@@ -990,14 +1093,38 @@ export const updateOwner = async (req, res) => {
       });
     }
 
-    Object.assign(owner, req.body);
+    const { name, email, number, address, password } = req.body;
+
+    if (email) {
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.params.id },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      owner.email = email;
+    }
+
+    if (name) owner.name = name;
+    if (number) owner.number = number;
+    if (address) owner.address = address;
+    if (password) owner.password = password;
 
     await owner.save();
+
+    const ownerResponse = owner.toObject();
+    delete ownerResponse.password;
 
     res.status(200).json({
       success: true,
       message: "Owner updated successfully",
-      owner,
+      owner: ownerResponse,
     });
   } catch (error) {
     res.status(500).json({
@@ -1008,12 +1135,20 @@ export const updateOwner = async (req, res) => {
 };
 
 
+
 // DELETE /api/admin/owners/:id
 export const deleteOwner = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const owner = await User.findOne({
       _id: req.params.id,
-      role: "owner",
+      role: { $in: ["owner", "OWNER"] },
     });
 
     if (!owner) {
@@ -1023,7 +1158,7 @@ export const deleteOwner = async (req, res) => {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await owner.deleteOne();
 
     res.status(200).json({
       success: true,
@@ -1039,13 +1174,27 @@ export const deleteOwner = async (req, res) => {
 
 
 
+
+
+
 // PUT /api/admin/brokers/:id
 export const updateBroker = async (req, res) => {
   try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ success: false, message: "Invalid id" });
+    }
+
+    // 🚨 IMPORTANT
+    delete req.body.role;
+
     const broker = await User.findOne({
-      _id: req.params.id,
-      role: "broker",
+      _id: id,
+      role: "BROKER",
     });
+
+    
 
     if (!broker) {
       return res.status(404).json({
@@ -1054,16 +1203,43 @@ export const updateBroker = async (req, res) => {
       });
     }
 
-    Object.assign(broker, req.body);
+    const { name, email, number, address, password } = req.body;
 
+    if (email) {
+      const exists = await User.findOne({
+        email,
+        _id: { $ne: id },
+      });
+
+      if (exists) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      broker.email = email;
+    }
+
+     broker.role = broker.role.toLowerCase();
+
+    if (name) broker.name = name;
+    if (number) broker.number = number;
+    if (address) broker.address = address;
+    if (password) broker.password = password;
+   
     await broker.save();
+
+    const data = broker.toObject();
+    delete data.password;
 
     res.status(200).json({
       success: true,
-      message: "Broker updated successfully",
-      broker,
+      broker: data,
     });
+
   } catch (error) {
+    console.log(error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -1072,13 +1248,19 @@ export const updateBroker = async (req, res) => {
 };
 
 
-
 // DELETE /api/admin/brokers/:id
 export const deleteBroker = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const broker = await User.findOne({
       _id: req.params.id,
-      role: "broker",
+      role: { $in: ["broker", "BROKER"] },
     });
 
     if (!broker) {
@@ -1088,7 +1270,7 @@ export const deleteBroker = async (req, res) => {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await broker.deleteOne();
 
     res.status(200).json({
       success: true,
@@ -1103,12 +1285,21 @@ export const deleteBroker = async (req, res) => {
 };
 
 
+
+
 // PUT /api/admin/lenders/:id
 export const updateLender = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const lender = await User.findOne({
       _id: req.params.id,
-      role: "lender",
+      role: { $in: ["lender", "LENDER"] },
     });
 
     if (!lender) {
@@ -1118,14 +1309,40 @@ export const updateLender = async (req, res) => {
       });
     }
 
-    Object.assign(lender, req.body);
+    const { name, email, number, address, password } = req.body;
+
+    if (email) {
+      const existingUser = await User.findOne({
+        email,
+        _id: { $ne: req.params.id },
+      });
+
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists",
+        });
+      }
+
+      lender.email = email;
+    }
+     lender.role = lender.role.toLowerCase();
+
+
+    if (name) lender.name = name;
+    if (number) lender.number = number;
+    if (address) lender.address = address;
+    if (password) lender.password = password;
 
     await lender.save();
+
+    const lenderResponse = lender.toObject();
+    delete lenderResponse.password;
 
     res.status(200).json({
       success: true,
       message: "Lender updated successfully",
-      lender,
+      lender: lenderResponse,
     });
   } catch (error) {
     res.status(500).json({
@@ -1136,12 +1353,22 @@ export const updateLender = async (req, res) => {
 };
 
 
+
+import mongoose from "mongoose";
+
 // DELETE /api/admin/lenders/:id
 export const deleteLender = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user id",
+      });
+    }
+
     const lender = await User.findOne({
       _id: req.params.id,
-      role: "lender",
+      role: { $in: ["lender", "LENDER"] },
     });
 
     if (!lender) {
@@ -1151,7 +1378,7 @@ export const deleteLender = async (req, res) => {
       });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await lender.deleteOne();
 
     res.status(200).json({
       success: true,
@@ -1160,239 +1387,6 @@ export const deleteLender = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: error.message,
-    });
-  }
-};
-
-
-
-
-
-// lend properties apis
-export const createLoan = async (req, res) => {
-  try {
-    const {
-      propertyId,
-      borrowerId,
-      loanAmount,
-      tenure,
-      interestRate,
-    } = req.body;
-
-    const property = await Property.findById(propertyId);
-
-    if (!property) {
-      return res.status(404).json({
-        message: "Property not found",
-      });
-    }
-
-    const borrower = await User.findById(borrowerId);
-
-    if (!borrower) {
-      return res.status(404).json({
-        message: "Borrower not found",
-      });
-    }
-
-    const loan = await Loan.create({
-      propertyId,
-      borrowerId,
-      ownerId: property.ownerId,
-      loanAmount,
-      tenure,
-      interestRate,
-      assignedBy: req.user._id,
-    });
-
-    res.status(201).json({
-      success: true,
-      loan,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-
-
-export const getAllLoans = async (req, res) => {
-  try {
-    const loans = await Loan.find()
-      .populate("propertyId")
-      .populate("borrowerId", "name email")
-      .populate("ownerId", "name email")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json(loans);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-
-
-export const approveLoan = async (req, res) => {
-  try {
-    const loan = await Loan.findById(req.params.id);
-
-    if (!loan) {
-      return res.status(404).json({
-        message: "Loan not found",
-      });
-    }
-
-    loan.status = "Approved";
-
-    await loan.save();
-
-    res.status(200).json({
-      success: true,
-      loan,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-
-
-export const rejectLoan = async (req, res) => {
-  try {
-    const loan = await Loan.findById(req.params.id);
-
-    if (!loan) {
-      return res.status(404).json({
-        message: "Loan not found",
-      });
-    }
-
-    loan.status = "Rejected";
-
-    await loan.save();
-
-    res.status(200).json({
-      success: true,
-      loan,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-
-
-
-
-export const getMyLoans = async (req, res) => {
-  try {
-    const loans = await Loan.find({
-      borrowerId: req.user._id,
-    })
-      .populate("propertyId")
-      .populate("ownerId", "name email")
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: loans.length,
-      loans,
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
-
-// GET /api/admin/loans/:id
-export const getLoanById = async (req, res) => {
-  try {
-    const loan = await Loan.findById(req.params.id)
-      .populate("propertyId")
-      .populate("borrowerId", "name email number address role")
-      .populate("ownerId", "name email number address role")
-      .populate("assignedBy", "name email role");
-
-    if (!loan) {
-      return res.status(404).json({
-        message: "Loan not found",
-      });
-    }
-
-    res.status(200).json(loan);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-// PUT /api/admin/loans/:id
-export const updateLoan = async (req, res) => {
-  try {
-    const loan = await Loan.findById(req.params.id);
-
-    if (!loan) {
-      return res.status(404).json({
-        message: "Loan not found",
-      });
-    }
-
-    const { loanAmount, tenure, interestRate, status } = req.body;
-
-    if (loanAmount !== undefined) loan.loanAmount = loanAmount;
-    if (tenure !== undefined) loan.tenure = tenure;
-    if (interestRate !== undefined) loan.interestRate = interestRate;
-    if (status !== undefined) {
-      if (!["Pending", "Approved", "Rejected"].includes(status)) {
-        return res.status(400).json({ message: "Invalid status value. Must be Pending, Approved, or Rejected." });
-      }
-      loan.status = status;
-    }
-
-    await loan.save();
-
-    res.status(200).json({
-      success: true,
-      loan,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-// DELETE /api/admin/loans/:id
-export const deleteLoan = async (req, res) => {
-  try {
-    const loan = await Loan.findById(req.params.id);
-
-    if (!loan) {
-      return res.status(404).json({
-        message: "Loan not found",
-      });
-    }
-
-    await Loan.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({
-      success: true,
-      message: "Loan deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
       message: error.message,
     });
   }

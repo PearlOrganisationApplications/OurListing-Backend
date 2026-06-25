@@ -46,14 +46,7 @@ import {
   deleteBroker,
   updateLender,
   deleteLender,
-  createLoan,
-  getAllLoans,
-  approveLoan,
-  rejectLoan,
-  getLoanById,
-  updateLoan,
-  deleteLoan,
-  getMyLoans
+  
 } from '../controllers/admin.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -73,7 +66,7 @@ const upload = multer({ storage });
 
 // Role check middleware for admin
 const adminProtect = (req, res, next) => {
-  if (req.user && req.user.role === 'admin') {
+  if (req.user && (req.user.role === 'admin' || req.user.role === 'ADMIN')) {
     next();
   } else {
     res.status(403).json({ message: 'Access denied. Admin role required.' });
@@ -160,22 +153,5 @@ router.delete("/brokers/:id", protect, adminProtect, deleteBroker);
 router.put("/lenders/:id", protect, adminProtect, updateLender);
 router.delete("/lenders/:id", protect, adminProtect, deleteLender);
 
-
-//loan 
-router.post("/loans", protect, adminProtect, createLoan);
-
-router.get("/loans", protect, adminProtect, getAllLoans);
-
-router.get("/loans/my", protect, adminProtect, getMyLoans);
-
-router.get("/loans/:id", protect, adminProtect, getLoanById);
-
-router.put("/loans/:id", protect, adminProtect, updateLoan);
-
-router.delete("/loans/:id", protect, adminProtect, deleteLoan);
-
-router.put("/loans/:id/approve", protect, adminProtect, approveLoan);
-
-router.put("/loans/:id/reject", protect, adminProtect, rejectLoan);
 
 export default router;
