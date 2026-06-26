@@ -46,6 +46,7 @@ import {
   deleteBroker,
   updateLender,
   deleteLender,
+  searchUsers,
   
 } from '../controllers/admin.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
@@ -84,6 +85,7 @@ router.get('/profile', protect, adminProtect, getAdminProfile);
 router.get('/dashboard/stats', protect, adminProtect, getDashboardStats);
 
 // --- USER CRUD ROUTES ---
+router.get("/users/search", protect, adminProtect, searchUsers);
 router.get('/users', protect, adminProtect, getAllUsers);
 router.get('/users/:id', protect, adminProtect, getUserById);
 router.post('/users', protect, adminProtect, createUser);

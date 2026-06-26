@@ -210,6 +210,51 @@ export const getUserById = async (req, res) => {
   }
 };
 
+// GET /api/admin/users/search?keyword=anik
+export const searchUsers = async (req, res) => {
+  try {
+    const { keyword, role, page = 1, limit = 10 } = req.query;
+
+    const query = {};
+
+    if (role) {
+      query.role = role.toLowerCase();
+    }
+
+    if (keyword) {
+      query.$or = [
+        { name: { $regex: keyword, $options: "i" } },
+        { email: { $regex: keyword, $options: "i" } },
+        { number: { $regex: keyword, $options: "i" } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const total = await User.countDocuments(query);
+
+    const users = await User.find(query)
+      .select("-password")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number(limit));
+
+    return res.status(200).json({
+      success: true,
+      total,
+      page: Number(page),
+      totalPages: Math.ceil(total / limit),
+      users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+
 // POST /api/admin/users
 export const createUser = async (req, res) => {
   const { name, email, password, role, number, address } = req.body;
