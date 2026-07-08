@@ -1,9 +1,9 @@
-import User from '../models/User.js';
-import jwt from 'jsonwebtoken';
+import User from "../models/User.js";
+import jwt from "jsonwebtoken";
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret', {
-    expiresIn: '30d',
+  return jwt.sign({ id }, process.env.JWT_SECRET || "secret", {
+    expiresIn: "30d",
   });
 };
 
@@ -14,7 +14,7 @@ export const register = async (req, res) => {
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const user = await User.create({
@@ -35,7 +35,7 @@ export const register = async (req, res) => {
         token: generateToken(user._id),
       });
     } else {
-      res.status(400).json({ message: 'Invalid user data' });
+      res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -57,7 +57,7 @@ export const login = async (req, res) => {
         token: generateToken(user._id),
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password' });
+      res.status(401).json({ message: "Invalid email or password" });
     }
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -65,5 +65,48 @@ export const login = async (req, res) => {
 };
 
 export const logout = async (req, res) => {
-  res.status(200).json({ message: 'Logged out successfully' });
+  res.status(200).json({ message: "Logged out successfully" });
+};
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+
+    if (user) {
+      res.json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        number: user.number,
+        address: user.address,
+      });
+    } else {
+      res.status(404).json({ message: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const user =await User.findByIdAndDelete(userId);
+
+    if (!user) {
+      res.status(400).json({
+        success: false,
+        message: "User not exist",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "delete succesfully",
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 };
