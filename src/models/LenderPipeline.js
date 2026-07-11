@@ -14,9 +14,9 @@ import mongoose from 'mongoose';
  */
 const lenderPipelineSchema = new mongoose.Schema(
   {
-    applicantName:   { type: String, required: true },
+    applicantName: { type: String, required: true },
     propertyAddress: { type: String, required: true },
-    propertyImage:   { type: String, default: '' },         // URL / path
+    propertyImage: { type: String, default: '' },         // URL / path
     loanType: {
       type: String,
       enum: ['Conventional', 'FHA', 'VA', 'USDA', 'Jumbo', '30-Year Fixed', '15-Year Fixed', 'ARM 5/1'],
@@ -32,9 +32,9 @@ const lenderPipelineSchema = new mongoose.Schema(
       enum: ['Active', 'Approved', 'Draft'],
       default: 'Active',
     },
-    closingDate:  { type: Date },                           // proper Date for YYYY-MM-DD formatting
-    loanAmount:   { type: Number, default: 0 },             // numeric for YTD funded aggregation
-    fundedYear:   { type: Number },                         // calendar year when stage = "Funded"
+    closingDate: { type: Date },                           // proper Date for YYYY-MM-DD formatting
+    loanAmount: { type: Number, default: 0 },             // numeric for YTD funded aggregation
+    fundedYear: { type: Number },                         // calendar year when stage = "Funded"
     // The lender who owns this pipeline entry
     lenderId: {
       type: mongoose.Schema.Types.ObjectId,
