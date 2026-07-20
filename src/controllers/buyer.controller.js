@@ -135,16 +135,7 @@ const page = parseInt(req.query.page) || 1;
      isFavorite: favoriteIds.has(prop._id.toString())
     }));
 
-    res.status(200).json({
-      status: 'success',
-      data: formattedProperties,
-      pagination: {
-        total_records: totalDocs,
-        current_page: page,
-        total_pages: Math.ceil(totalDocs / limit),
-        limit: limit
-      }
-    });
+    res.status(200).json(formattedProperties);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
