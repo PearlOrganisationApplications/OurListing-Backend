@@ -1,6 +1,8 @@
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
 import Plan from '../models/Plan.js';
+import fs from 'fs';
+import path from 'path';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper to get PayPal Access Token using native fetch
@@ -143,6 +145,131 @@ export const addProperty = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+
+export const updateOwnerProperty = async (req, res) => {
+  try {
+    const { id } = req.params; // Get property ID from URL
+    const ownerId = req.user._id;
+
+    // 1. Find the property and check ownership
+    const property = await Property.findOne({ _id: id, ownerId });
+
+    if (!property) {
+      return res.status(404).json({ message: 'Property not found' });
+    }
+
+    const {
+      title,
+      info,
+      listingType,
+      price,
+      location,
+      landArea,
+      latitude,
+      longitude,
+      propertyType,
+    } = req.body;
+
+    // 2. Handle nested features (Update only if provided in FormData)
+    // We check if the keys exist in req.body before updating
+    if (req.body['features[bedroom]'] !== undefined) {
+      property.features.bedroom = parseInt(req.body['features[bedroom]']) || 0;
+    }
+    if (req.body['features[bathroom]'] !== undefined) {
+      property.features.bathroom = parseInt(req.body['features[bathroom]']) || 0;
+    }
+    if (req.body['features[balcony]'] !== undefined) {
+      property.features.balcony = parseInt(req.body['features[balcony]']) || 0;
+    }
+
+    // 3. Handle File Updates (Photos & Documents)
+    const photoFiles = req.files?.['photos[]'] || req.files?.photos || [];
+    const documentFiles = req.files?.['documents[]'] || req.files?.documents || [];
+
+    if (photoFiles.length > 0) {
+      const newPhotos = photoFiles.map((file) => file.path.replace(/\\/g, '/'));
+      // Option A: Replace old photos
+      // property.photos = newPhotos; 
+      
+      // Option B: Append to old photos (Commonly preferred)
+      property.photos = [...property.photos, ...newPhotos];
+    }
+
+    if (documentFiles.length > 0) {
+      const newDocs = documentFiles.map((file) => file.path.replace(/\\/g, '/'));
+      property.documents = [...property.documents, ...newDocs];
+    }
+
+    // 4. Update text fields (only if they are provided)
+    if (title) property.title = title;
+    if (info !== undefined) property.info = info;
+    if (listingType) property.listingType = listingType;
+    if (price) property.price = Number(price);
+    if (location) property.location = location;
+    if (landArea) property.landArea = landArea;
+    if (latitude) property.latitude = Number(latitude);
+    if (longitude) property.longitude = Number(longitude);
+    if (propertyType) property.propertyType = propertyType;
+
+    // 5. Save the updated document
+    const updatedProperty = await property.save();
+
+    res.status(200).json({
+      message: 'Property updated successfully!',
+      property: updatedProperty,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const deleteOwnerProperty = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const ownerId = req.user._id;
+
+    // 1. Find the property and check ownership
+    const property = await Property.findOne({ _id: id, ownerId });
+
+    if (!property) {
+      return res.status(404).json({ 
+        message: 'Property not found or you do not have permission to delete it.' 
+      });
+    }
+
+    // 2. Helper function to delete files from the disk
+    const deleteFiles = (filePaths) => {
+      filePaths.forEach((filePath) => {
+        // Construct the absolute path (assuming 'uploads' is in the root)
+        const fullPath = path.resolve(filePath); 
+        
+        fs.unlink(fullPath, (err) => {
+          if (err) console.error(`Failed to delete file: ${filePath}`, err);
+        });
+      });
+    };
+
+    // 3. Delete associated photos and documents from the server
+    if (property.photos && property.photos.length > 0) {
+      deleteFiles(property.photos);
+    }
+    if (property.documents && property.documents.length > 0) {
+      deleteFiles(property.documents);
+    }
+
+    // 4. Delete the property from the database
+    await Property.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: 'Property and associated files deleted successfully!',
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Initiate PayPal Payment (Create Order)

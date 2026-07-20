@@ -768,6 +768,7 @@ export const createMortgage = async (req, res) => {
   }
 };
 
+
 // PUT /api/admin/mortgages/:id
 export const updateMortgage = async (req, res) => {
   try {
