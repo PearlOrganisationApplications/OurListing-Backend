@@ -99,6 +99,12 @@ export const getNearbyProperties = async (req, res) => {
       return res.status(400).json({ message: 'Please provide latitude, longitude, and radius' });
     }
 
+
+const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const totalDocs = await Property.countDocuments({}); 
     // In a real app with geospatial indexing, we'd use $near or $geoWithin.
     // Since we don't have a 2dsphere index mapped out, we will just return all properties for now
     // as a placeholder until the geospatial index is added to the schema.
@@ -129,7 +135,16 @@ export const getNearbyProperties = async (req, res) => {
      isFavorite: favoriteIds.has(prop._id.toString())
     }));
 
-    res.status(200).json(formattedProperties);
+    res.status(200).json({
+      status: 'success',
+      data: formattedProperties,
+      pagination: {
+        total_records: totalDocs,
+        current_page: page,
+        total_pages: Math.ceil(totalDocs / limit),
+        limit: limit
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

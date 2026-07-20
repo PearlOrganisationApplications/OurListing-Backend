@@ -148,11 +148,21 @@ export const getDashboard = async (req, res) => {
 export const getHotLeads = async (req, res) => {
   try {
     const lenderId = req.user._id;
+const page = parseInt(req.query.page) || 1;    // Default page 1
+    const limit = parseInt(req.query.limit) || 10; // Default limit 10
+    const skip = (page - 1) * limit;
+
+const totalDocs = await LenderApplication.countDocuments({
+      $or: [{ lenderId }, { lenderId: null }],
+      tag: 'hot',
+    });
 
     const docs = await LenderApplication.find({
       $or: [{ lenderId }, { lenderId: null }],
       tag: 'hot',
-    }).sort({ createdAt: -1 });
+    }) .sort({ createdAt: -1 })
+    .skip(skip)   // Pagination skip
+    .limit(limit); // Pagination limit;
 
     const hotLeads = docs.map((app) => ({
       id: app._id.toString(),
@@ -169,7 +179,18 @@ export const getHotLeads = async (req, res) => {
       status: app.status,
     }));
 
-    return res.status(200).json({ status: 'success', data: { hot_leads: hotLeads } });
+   return res.status(200).json({ 
+      status: 'success', 
+      data: { 
+        hot_leads: hotLeads,
+        pagination: {
+          total_records: totalDocs,
+          current_page: page,
+          total_pages: Math.ceil(totalDocs / limit),
+          limit: limit
+        }
+      } 
+    });
   } catch (error) {
     console.error('getHotLeads error:', error);
     return res.status(500).json({ status: 'error', message: error.message });
