@@ -85,6 +85,52 @@ export const getListings = async (req, res) => {
   }
 };
 
+export const getListingByIdForBroker = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const brokerId = req.user._id;
+
+    const property = await Property.findOne({ _id: id, brokerId: brokerId });
+
+    if (!property) {
+      return res.status(404).json({ 
+        message: "Property Not found" 
+      });
+    }
+
+    const propertyData = {
+      id: property._id,
+      title: property.title,
+      info: property.info,
+      listingType: property.listingType,
+      propertyType: property.propertyType,
+      price: property.price,
+      location: property.location,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      landArea: property.landArea,
+      features: {
+        bedroom: property.features.bedroom,
+        bathroom: property.features.bathroom,
+        balcony: property.features.balcony,
+      },
+      photos: property.photos,
+      documents: property.documents,
+      views: property.views,
+      status: property.status,
+      dailyStats: property.dailyStats,
+      brokerId: property.brokerId, 
+      createdAt: property.createdAt,
+      updatedAt: property.updatedAt
+    };
+
+    res.status(200).json(propertyData);
+  } catch (error) {
+    res.status(500).json({ message: "Server Error: " + error.message });
+  }
+};
+
+
 // POST /api/broker/properties/add
 export const addProperty = async (req, res) => {
   try {

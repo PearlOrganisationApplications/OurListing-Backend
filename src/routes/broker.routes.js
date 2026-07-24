@@ -9,6 +9,7 @@ import {
   updateLeadTag,
   deleteProperty,
   updateProperty,
+  getListingByIdForBroker,
 } from '../controllers/broker.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -41,7 +42,7 @@ const router = express.Router();
 // Apply auth protection & role check to all routes
 router.get('/stats', protect, brokerProtect, getStats);
 router.get('/listings', protect, brokerProtect, getListings);
-
+router.get("/listingsById/:id", protect, brokerProtect, getListingByIdForBroker);
 router.post(
   '/properties/add',
   protect,
