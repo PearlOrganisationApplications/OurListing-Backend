@@ -136,11 +136,11 @@ export const addProperty = async (req, res) => {
       const documentsArray = req.files['documents[]'] || req.files['documents'] || [];
 
       photosArray.forEach((file) => {
-        photoUrls.push(file.path.replace(/\\/g, '/'));
+        photoUrls.push(`uploads/${file.filename}`);
       });
 
       documentsArray.forEach((file) => {
-        documentUrls.push(file.path.replace(/\\/g, '/'));
+        documentUrls.push(`uploads/${file.filename}`);
       });
     }
 
@@ -391,12 +391,12 @@ export const updateProperty =  async (req, res) => {
       const docs = req.files['documents[]'] || req.files['documents'] || [];
 
       if (photos.length > 0) {
-        const photoPaths = photos.map(f => f.path.replace(/\\/g, '/'));
+        const photoPaths = photos.map(f => `uploads/${f.filename}`);
         updateData.photos = [...property.photos, ...photoPaths];
       }
 
       if (docs.length > 0) {
-        const docPaths = docs.map(f => f.path.replace(/\\/g, '/'));
+        const docPaths = docs.map(f => `uploads/${f.filename}`);
         updateData.documents = [...property.documents, ...docPaths];
       }
     }

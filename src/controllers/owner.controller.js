@@ -127,13 +127,11 @@ export const addProperty = async (req, res) => {
     const documentFiles = req.files?.['documents[]'] || req.files?.documents || [];
 
     const photos = photoFiles.map((file) => {
-      const normalizedPath = file.path.replace(/\\/g, '/');
-      return `${BASE_URL}/${normalizedPath}`;
+      return `${BASE_URL}/uploads/${file.filename}`;
     });
 
     const documents = documentFiles.map((file) => {
-      const normalizedPath = file.path.replace(/\\/g, '/');
-      return `${BASE_URL}/${normalizedPath}`;
+      return `${BASE_URL}/uploads/${file.filename}`;
     });
 
     const ownerId = req.user._id;
