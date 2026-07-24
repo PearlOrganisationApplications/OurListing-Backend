@@ -210,13 +210,13 @@ export const updateOwnerProperty =   async (req, res) => {
 
     if (photoFiles.length > 0) {
       property.photos = photoFiles.map((file) => {
-        return `${BASE_URL}/api/uploads/${file.filename}`;
+        return `${BASE_URL}/uploads/${file.filename}`;
       });
     }
 
     if (documentFiles.length > 0) {
       property.documents = documentFiles.map((file) => {
-        return `${BASE_URL}/api/uploads/${file.filename}`;
+        return `${BASE_URL}/uploads/${file.filename}`;
       });
     }
     if (title) property.title = title;
