@@ -1,6 +1,28 @@
 import Property from '../models/Property.js';
 import Favorite from '../models/Favorite.js';
 import mongoose from 'mongoose';  
+import User from  "../models/User.js";
+import Lead from "../models/Lead.js"
+
+const incrementPropertyView = async (propertyId) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const updated = await Property.findOneAndUpdate(
+      { _id: propertyId, "dailyStats.date": today },
+      { $inc: { views: 1, "dailyStats.$.viewCount": 1 } }
+    );
+    if (!updated) {
+      await Property.findByIdAndUpdate(propertyId, {
+        $inc: { views: 1 },
+        $push: { dailyStats: { $each: [{ date: today, viewCount: 1 }], $slice: -30 } }
+      });
+    }
+  } catch (err) {
+    console.error("View track error:", err);
+  }
+};
+
+
 
 
 
@@ -49,7 +71,10 @@ export const getProperties = async (req, res) => {
 
 export const getPropertyDetails = async (req, res) => {
   try {
-    const prop = await Property.findById(req.params.propertyId).populate('ownerId', 'name email number address role');
+    const { propertyId } = req.params;
+
+    await incrementPropertyView(propertyId);
+const prop = await Property.findById(req.params.propertyId).populate('ownerId', 'name email number address role');
     
   if (!prop) {
       return res.status(404).json({ message: 'Property not found' });
@@ -185,7 +210,7 @@ export const toggleFavorite = async (req, res) => {
 export const recordPropertyClick = async (req, res) => {
   try {
     const { propertyId } = req.params;
-    const userId = req.user._id;
+    const userId = req.user._id || req.user.id;
     const buyerName = req.user.name;
     const buyerPhone = req.user.number || req.user.phone || 'N/A';
 
