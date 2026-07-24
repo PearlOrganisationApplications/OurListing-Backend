@@ -80,6 +80,8 @@ export const getListings = async (req, res) => {
       price: prop.price,
       location: prop.location,
       status: prop.status,
+      photos: prop.photos,
+      documents: prop.documents
     }));
 
     res.status(200).json(formattedListings);
