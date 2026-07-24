@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboard, getListings, addProperty, initiatePayment, capturePayment,updateOwnerProperty, deleteOwnerProperty, getOwnerPerformance} from '../controllers/owner.controller.js';
+import { getDashboard, getListings, addProperty, initiatePayment, getListingById,capturePayment,updateOwnerProperty, deleteOwnerProperty, getOwnerPerformance} from '../controllers/owner.controller.js';
 import { upload } from '../middlewares/upload.middleware.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -8,6 +8,7 @@ const router = express.Router();
 // All owner routes require a valid JWT (role: owner)
 router.get('/dashboard', protect, getDashboard);
 router.get('/properties', protect, getListings);
+router.get("/propertiesById/:id", protect, getListingById)
 
 router.post('/properties/add', protect, upload.fields([
   { name: 'photos[]', maxCount: 10 },

@@ -90,6 +90,44 @@ export const getListings = async (req, res) => {
   }
 };
 
+export const getListingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id; 
+    const property = await Property.findOne({ _id: id, ownerId: userId });
+
+    if (!property) {
+      return res.status(404).json({ 
+        message: "Property Not Found!" 
+      });
+    }
+
+    res.status(200).json({
+      id: property._id,
+      title: property.title,
+      info: property.info,
+      listingType: property.listingType,
+      propertyType: property.propertyType,
+      price: property.price,
+      location: property.location,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      landArea: property.landArea,
+      features: property.features,
+      photos: property.photos,
+      documents: property.documents,
+      status: property.status,
+      ownerId: property.ownerId,
+      createdAt: property.createdAt,
+      updatedAt: property.updatedAt
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Server Error: " + error.message });
+  }
+};
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Add New Property
 // ─────────────────────────────────────────────────────────────────────────────
