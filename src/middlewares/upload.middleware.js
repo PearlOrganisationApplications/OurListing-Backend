@@ -1,4 +1,4 @@
-﻿import multer from 'multer';
+import multer from 'multer';
 import path from 'path';
 import StorageService from '../services/storage.service.js';
 
@@ -6,7 +6,7 @@ import StorageService from '../services/storage.service.js';
 // Used by: owner.routes.js, broker.routes.js (property photo/doc upload)
 const diskStorage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, 'uploads/');
+    cb(null, path.join(process.cwd(), 'uploads'));
   },
   filename: function (req, file, cb) {
     const safeFieldName = file.fieldname.replace(/\[\]/g, '');
