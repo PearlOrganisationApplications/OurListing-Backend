@@ -379,13 +379,18 @@ export const capturePayment = async (req, res) => {
 export const getOwnerPerformance =  async (req, res) => {
   try {
     const ownerId = req.user._id;
+    const range = parseInt(req.query.range) || 7; 
 
     const properties = await Property.find({ ownerId });
     const propertyIds = properties.map(p => p._id);
 
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - range);
     const totalImpressions = properties.reduce((sum, p) => sum + (p.views || 0), 0);
+    
     const totalConversions = await Lead.countDocuments({ 
-      interestedProperty: { $in: propertyIds } 
+      interestedProperty: { $in: propertyIds },
+      createdAt: { $gte: startDate } 
     });
     
     const conversionRate = totalImpressions > 0 
@@ -401,20 +406,23 @@ export const getOwnerPerformance =  async (req, res) => {
       });
     });
 
-    for (let i = 6; i >= 0; i--) {
+    for (let i = range - 1; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
       
       trendData.push({
         date: dateStr,
-        day: d.toLocaleDateString('en-US', { weekday: 'short' }),
+        label: range <= 7 ? d.toLocaleDateString('en-US', { weekday: 'short' }) : d.getDate().toString(),
         views: viewMap[dateStr] || 0 
       });
     }
 
     const listingBreakdown = await Promise.all(properties.map(async (p) => {
-      const leadCount = await Lead.countDocuments({ interestedProperty: p._id });
+      const leadCount = await Lead.countDocuments({ 
+        interestedProperty: p._id,
+        createdAt: { $gte: startDate } 
+      });
       return {
         id: p._id,
         title: p.title,
@@ -427,6 +435,7 @@ export const getOwnerPerformance =  async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
+        rangeSelected: range,
         performanceCards: {
           impressions: totalImpressions,
           conversions: totalConversions,
@@ -443,7 +452,6 @@ export const getOwnerPerformance =  async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Analytics Error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
