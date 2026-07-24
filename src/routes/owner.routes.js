@@ -1,5 +1,5 @@
 import express from 'express';
-import { getDashboard, getListings, addProperty, initiatePayment, capturePayment,updateOwnerProperty, deleteOwnerProperty} from '../controllers/owner.controller.js';
+import { getDashboard, getListings, addProperty, initiatePayment, capturePayment,updateOwnerProperty, deleteOwnerProperty, getOwnerPerformance} from '../controllers/owner.controller.js';
 import { upload } from '../middlewares/upload.middleware.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -21,5 +21,6 @@ router.patch('/properties/update/:id', protect, upload.fields([
 router.delete('/properties/delete/:id', protect, deleteOwnerProperty);
 router.post('/properties/pay', protect, initiatePayment);
 router.post('/properties/pay/capture', protect, capturePayment);
+router.get("/performance-stats", protect, getOwnerPerformance);
 
 export default router;

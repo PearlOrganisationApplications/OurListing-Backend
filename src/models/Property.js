@@ -20,6 +20,12 @@ const propertySchema = new mongoose.Schema(
     documents: [{ type: String }],
     views: { type: Number, default: 0 },
     status: { type: String, enum: ['ACTIVE', 'SOLD', 'INACTIVE', 'DRAFT'], default: 'ACTIVE' },
+    dailyStats: [
+      {
+        date: { type: String }, 
+        viewCount: { type: Number, default: 0 }
+      }
+    ],
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
