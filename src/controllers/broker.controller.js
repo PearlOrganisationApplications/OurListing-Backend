@@ -3,26 +3,23 @@ import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
 
-// GET /api/broker/stats
+const BASE_URL = 'https://propertyapp.ddns.net/';
+
 export const getStats = async (req, res) => {
   try {
     const brokerId = req.user._id;
 
-    // Count active listings for this broker
     const activeListingsCount = await Property.countDocuments({
       brokerId,
       status: 'ACTIVE',
     });
 
-    // Count leads for this broker
     const totalLeads = await Lead.countDocuments({ brokerId });
 
-    // Group leads by tag
     const hotLeads = await Lead.countDocuments({ brokerId, tag: 'HOT' });
     const warmLeads = await Lead.countDocuments({ brokerId, tag: 'WARM' });
     const coldLeads = await Lead.countDocuments({ brokerId, tag: 'COLD' });
 
-    // Calculate commissions (2.5% of price)
     const properties = await Property.find({ brokerId });
     let pendingCommission = 0;
     let earnedCommission = 0;
@@ -50,7 +47,6 @@ export const getStats = async (req, res) => {
   }
 };
 
-// GET /api/broker/listings
 export const getListings = async (req, res) => {
   try {
     const brokerId = req.user._id;
@@ -69,15 +65,22 @@ export const getListings = async (req, res) => {
 
     const properties = await Property.find(query).populate('ownerId', 'name');
 
-    const formattedListings = properties.map((prop) => ({
-      id: prop._id.toString(),
-      title: prop.title,
-      location: prop.location,
-      price: prop.price,
-      ownerName: prop.ownerId ? prop.ownerId.name : '',
-      status: prop.status ? prop.status.toUpperCase() : 'ACTIVE',
-      photoUrl: prop.photos && prop.photos.length > 0 ? prop.photos[0] : '',
-    }));
+    const formattedListings = properties.map((prop) => {
+      let photoUrl = '';
+      if (prop.photos && prop.photos.length > 0) {
+        photoUrl = prop.photos[0].startsWith('http') ? prop.photos[0] : `${BASE_URL}${prop.photos[0]}`;
+      }
+      
+      return {
+        id: prop._id.toString(),
+        title: prop.title,
+        location: prop.location,
+        price: prop.price,
+        ownerName: prop.ownerId ? prop.ownerId.name : '',
+        status: prop.status ? prop.status.toUpperCase() : 'ACTIVE',
+        photoUrl,
+      };
+    });
 
     res.status(200).json(formattedListings);
   } catch (error) {
@@ -114,8 +117,8 @@ export const getListingByIdForBroker = async (req, res) => {
         bathroom: property.features.bathroom,
         balcony: property.features.balcony,
       },
-      photos: property.photos,
-      documents: property.documents,
+      photos: property.photos.map(p => p.startsWith('http') ? p : `${BASE_URL}${p}`),
+      documents: property.documents.map(d => d.startsWith('http') ? d : `${BASE_URL}${d}`),
       views: property.views,
       status: property.status,
       dailyStats: property.dailyStats,
@@ -130,8 +133,6 @@ export const getListingByIdForBroker = async (req, res) => {
   }
 };
 
-
-// POST /api/broker/properties/add
 export const addProperty = async (req, res) => {
   try {
     const brokerId = req.user._id;
@@ -153,7 +154,6 @@ export const addProperty = async (req, res) => {
       status,
     } = req.body;
 
-    // Resolve features (supports nested features[balcony] as well as flat balcony fields)
     const bedroom = Number(
       req.body['features[bedroom]'] ||
       (req.body.features && req.body.features.bedroom) ||
@@ -173,7 +173,6 @@ export const addProperty = async (req, res) => {
       0
     );
 
-    // Parse uploaded files
     const photoUrls = [];
     const documentUrls = [];
 
@@ -182,15 +181,14 @@ export const addProperty = async (req, res) => {
       const documentsArray = req.files['documents[]'] || req.files['documents'] || [];
 
       photosArray.forEach((file) => {
-        photoUrls.push(`uploads/${file.filename}`);
+        photoUrls.push(`${BASE_URL}uploads/${file.filename}`);
       });
 
       documentsArray.forEach((file) => {
-        documentUrls.push(`uploads/${file.filename}`);
+        documentUrls.push(`${BASE_URL}uploads/${file.filename}`);
       });
     }
 
-    // Resolve Owner ID
     let resolvedOwnerId;
 
     if (ownerId) {
@@ -214,7 +212,6 @@ export const addProperty = async (req, res) => {
         });
       }
 
-      // Check user existence again
       const userExists = await User.findOne({ email: ownerEmail });
       if (userExists) {
         resolvedOwnerId = userExists._id;
@@ -224,13 +221,12 @@ export const addProperty = async (req, res) => {
           email: ownerEmail,
           number: ownerPhone || '',
           role: 'OWNER',
-          password: 'password123', // auto-hashed
+          password: 'password123', 
         });
         resolvedOwnerId = newOwner._id;
       }
     }
 
-    // Map status enum
     let dbStatus = 'ACTIVE';
     if (status) {
       const statusMap = {
@@ -273,7 +269,6 @@ export const addProperty = async (req, res) => {
   }
 };
 
-// GET /api/broker/leads
 export const getLeads = async (req, res) => {
   try {
     const brokerId = req.user._id;
@@ -337,7 +332,6 @@ export const getLeads = async (req, res) => {
   }
 };
 
-// PATCH /api/broker/leads/:leadId/tag
 export const updateLeadTag = async (req, res) => {
   try {
     const brokerId = req.user._id;
@@ -385,14 +379,10 @@ export const updateLeadTag = async (req, res) => {
   }
 };
 
-
 export const deleteProperty = async (req, res) => {
   try {
     const property = await Property.findById(req.params.id);
     if (!property) return res.status(404).json({ message: 'Property not found' });
-
-    console.log("DB Broker ID:", property.brokerId);
-    console.log("Token User ID:", req.user._id);
 
     const isMatch = property.brokerId?.toString() === req.user._id.toString();
 
@@ -411,7 +401,7 @@ export const deleteProperty = async (req, res) => {
   }
 };
 
-export const updateProperty =  async (req, res) => {
+export const updateProperty = async (req, res) => {
   try {
     const { id } = req.params;
     const property = await Property.findById(id);
@@ -437,12 +427,12 @@ export const updateProperty =  async (req, res) => {
       const docs = req.files['documents[]'] || req.files['documents'] || [];
 
       if (photos.length > 0) {
-        const photoPaths = photos.map(f => `uploads/${f.filename}`);
+        const photoPaths = photos.map(f => `${BASE_URL}uploads/${f.filename}`);
         updateData.photos = [...property.photos, ...photoPaths];
       }
 
       if (docs.length > 0) {
-        const docPaths = docs.map(f => `uploads/${f.filename}`);
+        const docPaths = docs.map(f => `${BASE_URL}uploads/${f.filename}`);
         updateData.documents = [...property.documents, ...docPaths];
       }
     }
@@ -465,7 +455,6 @@ export const updateProperty =  async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 export const getMapPins = async (req, res) => {
   try {
