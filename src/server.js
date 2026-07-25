@@ -17,6 +17,7 @@ import lenderRoutes from './routes/lender.routes.js';
 import planRoutes from './routes/plan.routes.js';
 import chatRoutes from './routes/chat.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import MortgageRoutes from './routes/mortgageRoutes.js'
 import initializeChatSocket from './socket/chat.socket.js';
 
 dotenv.config();
@@ -79,6 +80,7 @@ app.use('/api/lender', lenderRoutes);
 app.use('/api/plans', planRoutes);
 app.use('/api/chats', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use("/api/mortgages",MortgageRoutes)
 
 
 
