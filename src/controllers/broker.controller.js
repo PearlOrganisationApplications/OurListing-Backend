@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Property from '../models/Property.js';
 import Lead from '../models/Lead.js';
+import Commission from '../models/Commission.js';
 
 // GET /api/broker/stats
 export const getStats = async (req, res) => {
@@ -530,5 +531,109 @@ export const getMapPins = async (req, res) => {
       message: "Proximity Search Failed",
       error: error.message
     });
+  }
+};
+
+export const closeDeal = async (req, res) => {
+  try {
+    const { propertyId, clientName, dealValue, commissionPercentage, closingDate } = req.body;
+
+    const property = await Property.findById(propertyId);
+    if (!property) return res.status(404).json({ message: "Property not found" });
+
+    const commissionAmount = (dealValue * commissionPercentage) / 100;
+
+    const newDeal = await Commission.create({
+      brokerId: req.user._id, 
+      propertyId,
+      clientName,
+      dealValue,
+      commissionPercentage,
+      commissionAmount,
+      closingDate,
+      status: 'Confirmed'
+    });
+
+    await Property.findByIdAndUpdate(propertyId, { status: 'SOLD' });
+
+    res.status(201).json(newDeal);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getCommissionStats = async (req, res) => {
+  try {
+    const brokerId = req.user._id;
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+    const stats = await Commission.aggregate([
+      { $match: { brokerId: brokerId } },
+      {
+        $group: {
+          _id: null,
+          totalEarned: { $sum: { $cond: [{ $eq: ["$status", "Paid"] }, "$commissionAmount", 0] } },
+          pending: { $sum: { $cond: [{ $ne: ["$status", "Paid"] }, "$commissionAmount", 0] } },
+          thisMonth: {
+            $sum: {
+              $cond: [
+                { $and: [{ $eq: ["$status", "Paid"] }, { $gte: ["$closingDate", startOfMonth] }] },
+                "$commissionAmount", 0
+              ]
+            }
+          }
+        }
+      }
+    ]);
+
+    res.json(stats[0] || { totalEarned: 0, pending: 0, thisMonth: 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getMyDeals = async (req, res) => {
+  try {
+    const { status } = req.query; 
+    let filter = { brokerId: req.user._id };
+    if (status && status !== 'All') filter.status = status;
+
+    const deals = await Commission.find(filter)
+      .populate('propertyId', 'title location propertyType features') 
+      .sort({ closingDate: -1 });
+
+    res.json(deals);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+export const updateCommissionStatus = async (req, res) => {
+  try {
+    const { id } = req.params; 
+    const { status } = req.body; 
+
+    const validStatuses = ['Pending', 'Confirmed', 'Paid'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid Status. Use Pending, Confirmed, or Paid" });
+    }
+
+    const updatedDeal = await Commission.findByIdAndUpdate(
+      id,
+      { status: status },
+      { new: true } 
+    );
+
+    if (!updatedDeal) {
+      return res.status(404).json({ message: "Deal not found" });
+    }
+
+    res.status(200).json({
+      message: `Status updated to ${status} successfully`,
+      updatedDeal
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };

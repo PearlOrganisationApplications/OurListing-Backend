@@ -1,6 +1,6 @@
 import MortgageListing from '../models/MortgageListing.js';
 import MortgageApplication from '../models/MortgageApplication.js';
-import User from '../models/User.js'; // User model import kiya for validation
+import User from '../models/User.js'; 
 import mongoose from 'mongoose';
 
 export const createMortgageRequest = async (req, res) => {
@@ -137,6 +137,24 @@ export const updatePipelineStatus = async (req, res) => {
             { new: true }
         );
         res.json({ success: true, data: updated });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+export const getBuyerLoanHistory = async (req, res) => {
+    try {
+        const { buyerId } = req.params;
+
+      
+        const myRequests = await MortgageListing.find({ buyer: buyerId })
+            .sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: myRequests.length,
+            data: myRequests
+        });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }

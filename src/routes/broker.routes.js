@@ -10,6 +10,10 @@ import {
   deleteProperty,
   updateProperty,
   getListingByIdForBroker,
+  closeDeal,
+  getCommissionStats,
+  getMyDeals,
+  updateCommissionStatus
 } from '../controllers/broker.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -67,5 +71,9 @@ router.put("/update/:id", protect, upload.fields([
 router.get('/leads', protect, brokerProtect, getLeads);
 router.patch('/leads/:leadId/tag', protect, brokerProtect, updateLeadTag);
 router.delete("/delete/:id", protect, deleteProperty);
+router.post("/close-deal", protect, brokerProtect,closeDeal);
+router.get("/get-stats", protect, brokerProtect,getCommissionStats );
+router.get("/commissions/list", protect, brokerProtect, getMyDeals);
+router.patch('/update-commision-status/:id', protect,brokerProtect, updateCommissionStatus);
 
 export default router;

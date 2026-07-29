@@ -33,14 +33,13 @@ export const optionalProtect = async (req, res, next) => {
   }
 
   if (!token) {
-    return next(); // no token — proceed as guest
+    return next();
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
     req.user = await User.findById(decoded.id).select('-password');
   } catch (error) {
-    // invalid/expired token — proceed as guest, don't block
   }
 
   next();
