@@ -45,7 +45,9 @@ import {
   updateBroker,
   deleteBroker,
   updateLender,
-  deleteLender
+  deleteLender,
+  updateUserPlan,
+  assignRandomPlans
 } from '../controllers/admin.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 
@@ -151,5 +153,7 @@ router.delete("/brokers/:id", protect, adminProtect, deleteBroker);
 
 router.put("/lenders/:id", protect, adminProtect, updateLender);
 router.delete("/lenders/:id", protect, adminProtect, deleteLender);
+router.patch("/update-plan", updateUserPlan);
+router.patch("/update-bulk-plans", assignRandomPlans)
 
 export default router;

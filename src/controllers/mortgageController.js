@@ -159,3 +159,51 @@ export const getBuyerLoanHistory = async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 };
+
+export const getLenderOffers = async (req, res) => {
+    try {
+        const { lenderId } = req.params;
+
+        const offers = await MortgageApplication.find({ lender: lenderId })
+            .populate({
+                path: 'listingId',
+                select: 'propertyType location loanAmount' 
+            })
+            .sort({ updatedAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            count: offers.length,
+            data: offers
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};
+
+
+export const getActiveLoanPipeline = async (req, res) => {
+    try {
+        const { listingId } = req.params;
+        const activeLoan = await MortgageApplication.findOne({ 
+            listingId, 
+            status: 'Accepted' 
+        })
+        .populate('lender', 'name email number')
+        .populate('listingId');
+
+        if (!activeLoan) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "No accepted offer found for this listing." 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: activeLoan
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+};

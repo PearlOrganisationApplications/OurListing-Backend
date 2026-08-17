@@ -1164,3 +1164,79 @@ export const deleteLender = async (req, res) => {
     });
   }
 };
+
+export const updateUserPlan =  async (req, res) => {
+    try {
+        const { userId, planType } = req.body;
+
+        const planDetails = {
+            "BASIC": "$99",
+            "PRO": "$150",
+            "PREMIUM": "$199",
+            "1 YEAR TRIAL": "$0"
+        };
+
+        if (!planDetails.hasOwnProperty(planType)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid plan type."
+            });
+        }
+
+        const selectedPrice = planDetails[planType];
+
+        const user = await User.findByIdAndUpdate(
+            userId,
+            { 
+                planType: planType,
+                planPrice: selectedPrice 
+            },
+            { new: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+export const assignRandomPlans =  async (req, res) => {
+    try {
+        const targetPlan = "FREE TRIAL"; 
+        const targetPrice = "$0";
+
+        const result = await User.updateMany(
+            { role: { $ne: 'ADMIN' } }, 
+            { 
+                $set: { 
+                    planType: targetPlan, 
+                    planPrice: targetPrice 
+                } 
+            }
+        );
+
+        if (result.matchedCount === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "NON ADMIN NOT FOUND!" 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: " FREE TRIAL successfully assign TO ALL USERS!",
+            totalUsersAffected: result.modifiedCount
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Update fail ho gaya",
+            error: error.message
+        });
+    }
+};

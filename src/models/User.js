@@ -32,6 +32,15 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    planType: {
+      type: String,
+      enum: ["BASIC", "PRO", "PREMIUM", "FREE TRIAL"],
+      default: "FREE TRIAL"
+    },
+    planPrice: {
+      type: String,
+      default: "$0"
+    },
     role: {
       type: String,
       enum: ['buyer', 'OWNER', 'BROKER', 'LENDER', 'ADMIN'],
