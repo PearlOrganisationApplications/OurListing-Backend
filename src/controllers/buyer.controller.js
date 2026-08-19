@@ -60,7 +60,8 @@ export const getProperties = async (req, res) => {
       photos: prop.photos,
       propertyType: prop.propertyType,
       features: prop.features,
-     isFavorite: favoriteIds.has(prop._id.toString())
+     isFavorite: favoriteIds.has(prop._id.toString()),
+     createdAt: prop.createdAt
     }));
 
     res.status(200).json(formattedProperties);
@@ -157,7 +158,8 @@ const page = parseInt(req.query.page) || 1;
       photos: prop.photos,
       propertyType: prop.propertyType,
       features: prop.features,
-     isFavorite: favoriteIds.has(prop._id.toString())
+     isFavorite: favoriteIds.has(prop._id.toString()),
+     createdAt: prop.createdAt
     }));
 
     res.status(200).json(formattedProperties);
@@ -168,9 +170,13 @@ const page = parseInt(req.query.page) || 1;
 
 export const getFavorites = async (req, res) => {
   try {
-    // Find all favorite entries for the authenticated user and populate property details
     const favorites = await Favorite.find({ user: req.user._id }).populate('property');
-    const properties = favorites.map((fav) => fav.property);
+ const properties = favorites.filter(fav => fav.property !== null)
+ .map((fav) => ({
+      ...fav.property._doc,     
+      createdAt: fav.property.createdAt 
+    }));  
+    
     return res.status(200).json({ status: 'success', data: properties });
   } catch (error) {
     console.error('getFavorites error:', error);

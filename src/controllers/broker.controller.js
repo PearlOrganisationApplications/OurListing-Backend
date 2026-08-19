@@ -80,6 +80,7 @@ export const getListings = async (req, res) => {
         ownerName: prop.ownerId ? prop.ownerId.name : '',
         status: prop.status ? prop.status.toUpperCase() : 'ACTIVE',
         photoUrl,
+         createdAt: prop.createdAt,
       };
     });
 

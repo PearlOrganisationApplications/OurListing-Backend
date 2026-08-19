@@ -81,7 +81,8 @@ export const getListings = async (req, res) => {
       location: prop.location,
       status: prop.status,
       photos: prop.photos,
-      documents: prop.documents
+      documents: prop.documents,
+      createdAt: prop.createdAt
     }));
 
     res.status(200).json(formattedListings);

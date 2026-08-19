@@ -1,4 +1,5 @@
 import User from '../models/User.js';
+import axios from 'axios';
 
 export const saveUserLocation =  async (req, res) => {
   try {
@@ -107,6 +108,63 @@ export const updateLocation = async (req, res) => {
     );
 
     res.status(200).json({ success: true, data: updatedUser.location });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
+export const getLocationById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('location address name');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (!user.location) {
+      return res.status(404).json({ success: false, message: "Location not set for this user" });
+    }
+
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+export const searchExternalLocation = async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    if (!query) {
+      return res.status(400).json({ success: false, message: "Query is required" });
+    }
+
+    const response = await axios.get(`https://nominatim.openstreetmap.org/search`, {
+      params: {
+        q: query,
+        format: 'json',
+        addressdetails: 1,
+        limit: 5
+      },
+      headers: {
+        'User-Agent': 'YourAppName'
+      }
+    });
+
+    const results = response.data.map(item => ({
+      name: item.display_name,
+      latitude: item.lat,
+      longitude: item.lon,
+      city: item.address.city || item.address.town || item.address.village,
+      state: item.address.state,
+      country: item.address.country
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: results
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
