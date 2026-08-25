@@ -18,6 +18,15 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    let profilePicUrl = "";
+    if (req.file) {
+
+      const protocol = req.protocol;
+      const host = req.get('host');
+      profilePicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+    }
+
+
     const user = await User.create({
       name,
       email,
@@ -25,6 +34,8 @@ export const register = async (req, res) => {
       number,
       address,
       role,
+      profilePic: profilePicUrl
+
     });
 
     if (user) {
@@ -34,6 +45,8 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         token: generateToken(user._id),
+                profilePic: user.profilePic,
+
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });

@@ -45,6 +45,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+      profilePic: {
+      type: String,
+      default: ""
+    },
     planType: {
       type: String,
       enum: ["BASIC", "PRO", "PREMIUM", "FREE TRIAL"],

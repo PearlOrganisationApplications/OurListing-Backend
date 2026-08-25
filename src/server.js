@@ -20,6 +20,7 @@ import adminRoutes from './routes/admin.routes.js';
 import MortgageRoutes from './routes/mortgageRoutes.js'
 import initializeChatSocket from './socket/chat.socket.js';
 import addressRoutes from './routes/addressRoutes.js'
+import assistantRoutes from './routes/assistantRoutes.js'
 
 dotenv.config();
 dns.setServers(['8.8.8.8', '1.1.1.1']);
@@ -83,6 +84,7 @@ app.use('/api/chats', chatRoutes);
 app.use('/api/admin', adminRoutes);
 app.use("/api/mortgages",MortgageRoutes);
 app.use("/api/address", addressRoutes)
+app.use("/api/ai-assistant", assistantRoutes)
 
 
 

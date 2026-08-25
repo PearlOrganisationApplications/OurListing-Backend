@@ -22,10 +22,6 @@ const incrementPropertyView = async (propertyId) => {
   }
 };
 
-
-
-
-
 const getUserFavoriteIdSet = async (userId) => {
   if (!userId) return new Set();
   const favorites = await Favorite.find({ user: userId }).select('property');
@@ -232,7 +228,6 @@ export const recordPropertyClick = async (req, res) => {
     // Resolve broker ID
     let brokerId = property.brokerId;
     if (!brokerId) {
-      // Fallback to first broker in system if property has no assigned broker
       const anyBroker = await User.findOne({ role: 'BROKER' });
       if (!anyBroker) {
         return res.status(400).json({ message: 'No broker available in the system to handle this lead.' });
