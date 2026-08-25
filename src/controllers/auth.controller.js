@@ -20,10 +20,8 @@ export const register = async (req, res) => {
 
     let profilePicUrl = "";
     if (req.file) {
-
-      const protocol = req.protocol;
-      const host = req.get('host');
-      profilePicUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      const BASE_URL = process.env.BASE_URL || 'https://propertyapp.ddns.net';
+      profilePicUrl = `${BASE_URL}/uploads/${req.file.filename}`;
     }
 
 
