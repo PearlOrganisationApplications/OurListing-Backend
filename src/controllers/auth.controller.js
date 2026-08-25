@@ -19,9 +19,12 @@ export const register = async (req, res) => {
     }
 
     let profilePicUrl = "";
+
     if (req.file) {
-      const BASE_URL = process.env.BASE_URL || 'https://propertyapp.ddns.net';
-      profilePicUrl = `${BASE_URL}/uploads/${req.file.filename}`;
+      const BASE_URL =
+        process.env.BASE_URL || "https://propertyapp.ddns.net/";
+
+      profilePicUrl = `${BASE_URL}uploads/${req.file.filename}`;
     }
 
 
@@ -43,7 +46,7 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         token: generateToken(user._id),
-                profilePic: user.profilePic,
+        profilePic: user.profilePic,
 
       });
     } else {
@@ -105,7 +108,7 @@ export const deleteProfile = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const user =await User.findByIdAndDelete(userId);
+    const user = await User.findByIdAndDelete(userId);
 
     if (!user) {
       res.status(400).json({
