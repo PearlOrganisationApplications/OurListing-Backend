@@ -22,11 +22,10 @@ export const register = async (req, res) => {
 
     if (req.file) {
       const BASE_URL =
-        process.env.BASE_URL || "https://propertyapp.ddns.net/";
+        process.env.BASE_URL || "https://propertyapp.ddns.net";
 
-      profilePicUrl = `${BASE_URL}uploads/${req.file.filename}`;
+      profilePicUrl = `${BASE_URL}/uploads/${req.file.filename}`;
     }
-
 
     const user = await User.create({
       name,
